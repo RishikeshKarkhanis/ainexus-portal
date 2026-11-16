@@ -128,7 +128,6 @@ const navigation = [
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-
   const { user, isAuthenticated, logout } = useAuth();
 
   const handleLogout = () => {
@@ -138,65 +137,48 @@ function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#080B16]/95 backdrop-blur-lg">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-        {/* Brand */}
-        <a href="#home" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10">
-            <BrainCircuit className="text-blue-400" size={27} />
-          </div>
-
-          <div>
-            <p className="text-lg font-bold tracking-wide text-white">
-              AI <span className="text-blue-400">NEXUS</span>
-            </p>
-            <p className="text-[9px] tracking-[0.18em] text-slate-500">ACROPOLIS INSTITUTE</p>
-          </div>
+    <header className="sticky top-0 z-50 border-b border-[#3B82D6]/30 bg-[#00001F]/95 backdrop-blur-lg">
+      <nav className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-6 md:flex-row md:items-center md:justify-between lg:px-12">
+        <a href="#home" className="flex items-center gap-4">
+          <span className="flex h-10 w-10 items-center justify-center text-3xl leading-none text-[#3B82D6]">✳</span>
+          <span className="flex flex-col">
+            <span className="text-xl tracking-[0.22em] text-[#E8E5DF]">AI NEXUS</span>
+            <span className="mt-1 text-[10px] tracking-[0.28em] text-[#AEBBD0]">ACROPOLIS INSTITUTE</span>
+          </span>
         </a>
 
-        {/* Desktop Navigation */}
-        <div className="hidden items-center gap-7 lg:flex">
+        <div className="hidden items-center gap-x-7 gap-y-3 text-sm text-[#AEBBD0] lg:flex">
           {navigation.map((item) => (
-            <a key={item.label} href={item.href} className="text-sm text-slate-400 transition hover:text-blue-400">
+            <a key={item.label} href={item.href} className="transition hover:text-[#E8E5DF]">
               {item.label}
             </a>
           ))}
         </div>
 
-        {/* Desktop Authentication */}
         <div className="relative hidden lg:block">
           {!isAuthenticated ? (
-            <Link to="/auth" className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500">
+            <Link to="/auth" className="inline-flex items-center gap-2 rounded-full border border-[#3B82D6]/50 px-5 py-2 text-sm text-[#E8E5DF] transition hover:bg-[#080D24]">
               Login <ArrowUpRight size={16} />
             </Link>
           ) : (
             <>
-              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-3 rounded-lg border border-white/10 bg-[#11182B] px-4 py-2.5 transition hover:border-blue-400/40">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/15 text-blue-400">
-                  <UserRound size={18} />
-                </div>
-
-                <span className="text-sm font-semibold text-white">{user?.name?.split(" ")[0] || "Account"}</span>
-
-                <ArrowRight size={14} className={`text-slate-400 transition ${profileOpen ? "rotate-90" : ""}`} />
+              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-3 rounded-full border border-[#3B82D6]/50 px-5 py-2 text-sm text-[#E8E5DF] transition hover:bg-[#080D24]">
+                <UserRound size={17} className="text-[#3B82D6]" />
+                <span>{user?.name?.split(" ")[0] || "Account"}</span>
+                <span className={`text-[#AEBBD0] transition ${profileOpen ? "rotate-180" : ""}`}>⌄</span>
               </button>
 
-              {/* Profile Dropdown */}
               {profileOpen && (
-                <div className="absolute right-0 top-full mt-3 w-52 overflow-hidden rounded-xl border border-white/10 bg-[#11182B] p-2 shadow-xl">
-                  <div className="border-b border-white/10 px-3 py-3">
-                    <p className="text-sm font-semibold text-white">{user?.name}</p>
-                    <p className="mt-1 truncate text-xs text-slate-500">{user?.email}</p>
+                <div className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-xl border border-[#3B82D6]/30 bg-[#080D24] p-2 shadow-xl">
+                  <div className="border-b border-[#3B82D6]/20 px-3 py-3">
+                    <p className="text-sm text-[#E8E5DF]">{user?.name}</p>
+                    <p className="mt-1 truncate text-xs text-[#AEBBD0]">{user?.email}</p>
                   </div>
-
-                  <Link to="/profile" onClick={() => setProfileOpen(false)} className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white">
-                    <UserRound size={17} />
-                    My Profile
+                  <Link to="/profile" onClick={() => setProfileOpen(false)} className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#AEBBD0] transition hover:bg-white/5 hover:text-[#E8E5DF]">
+                    <UserRound size={17} /> My Profile
                   </Link>
-
-                  <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-400 transition hover:bg-red-500/10">
-                    <LogOut size={17} />
-                    Logout
+                  <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#D58C91] transition hover:bg-red-500/10">
+                    <LogOut size={17} /> Logout
                   </button>
                 </div>
               )}
@@ -204,41 +186,34 @@ function Navbar() {
           )}
         </div>
 
-        {/* Mobile Menu Button */}
-        <button className="text-white lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">
+        <button className="text-[#E8E5DF] lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">
           {menuOpen ? <X size={25} /> : <Menu size={25} />}
         </button>
       </nav>
 
-      {/* Mobile Navigation */}
       {menuOpen && (
-        <div className="border-t border-white/10 bg-[#080B16] px-6 py-5 lg:hidden">
+        <div className="border-t border-[#3B82D6]/20 bg-[#00001F] px-6 py-5 lg:hidden">
           <div className="flex flex-col gap-5">
             {navigation.map((item) => (
-              <a key={item.label} href={item.href} onClick={() => setMenuOpen(false)} className="text-sm text-slate-300 hover:text-blue-400">
+              <a key={item.label} href={item.href} onClick={() => setMenuOpen(false)} className="text-sm text-[#AEBBD0] transition hover:text-[#E8E5DF]">
                 {item.label}
               </a>
             ))}
-
             {!isAuthenticated ? (
-              <Link to="/auth" onClick={() => setMenuOpen(false)} className="rounded-lg bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white">
+              <Link to="/auth" onClick={() => setMenuOpen(false)} className="w-fit rounded-full border border-[#3B82D6]/50 px-5 py-2.5 text-sm text-[#E8E5DF]">
                 Login / Register
               </Link>
             ) : (
               <>
-                <div className="border-t border-white/10 pt-4">
-                  <p className="text-sm font-semibold text-white">{user?.name}</p>
-                  <p className="mt-1 text-xs text-slate-500">{user?.email}</p>
+                <div className="border-t border-[#3B82D6]/20 pt-4">
+                  <p className="text-sm text-[#E8E5DF]">{user?.name}</p>
+                  <p className="mt-1 text-xs text-[#AEBBD0]">{user?.email}</p>
                 </div>
-
-                <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 text-sm text-slate-300 hover:text-blue-400">
-                  <UserRound size={17} />
-                  My Profile
+                <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 text-sm text-[#AEBBD0] hover:text-[#E8E5DF]">
+                  <UserRound size={17} /> My Profile
                 </Link>
-
-                <button onClick={handleLogout} className="flex items-center gap-3 text-left text-sm text-red-400">
-                  <LogOut size={17} />
-                  Logout
+                <button onClick={handleLogout} className="flex items-center gap-3 text-left text-sm text-[#D58C91]">
+                  <LogOut size={17} /> Logout
                 </button>
               </>
             )}
@@ -252,11 +227,11 @@ function Navbar() {
 function SectionHeading({ eyebrow, title, description, centered = false }) {
   return (
     <div className={`mb-12 max-w-2xl ${centered ? "mx-auto text-center" : ""}`}>
-      <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-400">{eyebrow}</p>
+      <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#3B82D6]">{eyebrow}</p>
 
-      <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">{title}</h2>
+      <h2 className="mt-4 text-3xl font-bold tracking-tight text-[#E8E5DF] sm:text-4xl">{title}</h2>
 
-      {description && <p className="mt-4 text-sm leading-7 text-slate-400 sm:text-base">{description}</p>}
+      {description && <p className="mt-4 text-sm leading-7 text-[#AEBBD0] sm:text-base">{description}</p>}
     </div>
   );
 }
@@ -264,58 +239,58 @@ function SectionHeading({ eyebrow, title, description, centered = false }) {
 function Hero() {
   return (
     <section id="home" className="relative overflow-hidden">
-      <div className="absolute -right-40 -top-32 h-[450px] w-[450px] rounded-full bg-blue-600/10 blur-[130px]" />
-      <div className="absolute -bottom-40 -left-40 h-[400px] w-[400px] rounded-full bg-violet-700/10 blur-[130px]" />
-
-      <div className="relative mx-auto grid min-h-[620px] max-w-7xl items-center gap-14 px-6 py-24 lg:grid-cols-2 lg:px-8">
-        <div>
-          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/5 px-4 py-2">
-            <Sparkles size={14} className="text-blue-400" />
-            <span className="text-xs font-medium tracking-wide text-blue-300">DEPARTMENT OF CSE (AI & ML)</span>
+      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 py-16 md:grid-cols-2 md:py-24 lg:px-12">
+        <div className="relative z-10">
+          <div className="mb-8 flex items-center gap-4 text-xs tracking-[0.2em] text-[#3B82D6]">
+            <span>✦ &nbsp; DEPARTMENT OF CSE (AI &amp; ML)</span>
+            <span className="hidden h-px w-24 bg-[#3B82D6]/70 sm:block" />
           </div>
 
-          <h1 className="max-w-2xl text-5xl font-bold leading-[1.12] tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Building
-            <br />
-            Beyond
-            <br />
-            <span className="text-blue-400">Boundaries.</span>
+          <h1 className="max-w-xl text-6xl leading-[0.98] tracking-[-0.045em] text-[#E8E5DF] sm:text-7xl lg:text-8xl">
+            Building<br />Beyond<br /><span className="text-[#6F91D8]">Boundaries.</span>
           </h1>
+          <p className="mt-5 max-w-lg font-editorial text-3xl italic leading-tight text-[#AEBBD0] sm:text-4xl">
+            A student-driven community at Acropolis Institute of Technology and Research.
+          </p>
+          <p className="mt-8 max-w-xl text-base leading-8 text-[#AEBBD0] sm:text-lg">
+            We explore Artificial Intelligence, build technology and turn ambitious ideas into meaningful innovation.
+          </p>
 
-          <p className="mt-7 max-w-xl text-base leading-8 text-slate-400 sm:text-lg">A student-driven community at Acropolis Institute of Technology and Research. We explore Artificial Intelligence, build technology and turn ambitious ideas into meaningful innovation.</p>
-
-          <div className="mt-9 flex flex-wrap gap-4">
-            <a href="#events" className="inline-flex items-center gap-3 rounded-lg bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-500">
+          <div className="mt-10 flex flex-wrap gap-4">
+            <a href="#events" className="inline-flex items-center gap-4 bg-[#1E4F9A] px-7 py-4 text-sm text-[#E8E5DF] transition hover:bg-[#3B82D6]">
               Explore Events <ArrowRight size={17} />
             </a>
-
-            <a href="#contact" className="inline-flex items-center gap-3 rounded-lg border border-white/15 px-6 py-3.5 text-sm font-semibold text-white transition hover:border-blue-400/50 hover:bg-white/5">
+            <a href="#contact" className="inline-flex items-center border border-[#E8E5DF]/60 px-7 py-4 text-sm text-[#E8E5DF] transition hover:border-[#3B82D6] hover:text-[#3B82D6]">
               Contact Us
             </a>
           </div>
         </div>
 
-        <div className="relative hidden items-center justify-center lg:flex">
-          <div className="relative flex h-[420px] w-[420px] items-center justify-center rounded-full border border-blue-400/20">
-            <div className="absolute h-[330px] w-[330px] rounded-full border border-violet-400/20" />
-            <div className="absolute h-[235px] w-[235px] rounded-full border border-blue-400/20" />
+        <div className="relative mx-auto h-[430px] w-full max-w-xl">
+          <div className="blueprint absolute right-2 top-8 h-72 w-72 rounded-full border border-[#3B82D6]/60 opacity-80 sm:right-8 sm:h-80 sm:w-80">
+            <div className="absolute inset-8 rounded-full border border-[#3B82D6]/50" />
+            <div className="absolute inset-16 rounded-full border border-[#3B82D6]/40" />
+            <div className="absolute left-1/2 top-0 h-full w-px bg-[#3B82D6]/30" />
+            <div className="absolute left-0 top-1/2 h-px w-full bg-[#3B82D6]/30" />
+          </div>
 
-            <div className="relative flex h-36 w-36 items-center justify-center rounded-3xl border border-blue-400/30 bg-[#111A31]">
-              <BrainCircuit size={78} strokeWidth={1.2} className="text-blue-400" />
-            </div>
-
-            <div className="absolute left-12 top-16 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#111A31] text-blue-400">
-              <Code2 size={23} />
-            </div>
-
-            <div className="absolute bottom-16 right-10 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#111A31] text-violet-400">
-              <Cpu size={23} />
-            </div>
-
-            <div className="absolute right-12 top-12 flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-[#111A31] text-cyan-400">
-              <Sparkles size={23} />
+          <div className="photo-grain absolute left-2 top-3 z-10 flex h-52 w-[72%] -rotate-3 items-end overflow-hidden border-[7px] border-[#E8E5DF]/90 bg-[#080D24] shadow-2xl sm:left-4">
+            <img src={galleryImages[0]} alt="AI Nexus community event" className="absolute inset-0 h-full w-full object-cover opacity-65 grayscale" />
+            <div className="relative z-10 p-5">
+              <p className="text-[10px] tracking-[0.25em] text-[#E8E5DF]/80">ACROPOLIS INSTITUTE</p>
+              <p className="mt-1 text-2xl text-[#E8E5DF]">Ideas take shape here.</p>
             </div>
           </div>
+
+          <div className="photo-grain absolute bottom-4 right-1 z-20 flex h-48 w-[70%] rotate-3 items-end overflow-hidden border-[7px] border-[#E8E5DF]/90 bg-[#080D24] shadow-2xl sm:right-0">
+            <img src={galleryImages[2]} alt="Students collaborating on technology" className="absolute inset-0 h-full w-full object-cover opacity-60 grayscale" />
+            <div className="relative z-10 p-5">
+              <p className="text-[10px] tracking-[0.25em] text-[#E8E5DF]/80">WORKSHOPS · BUILDS · PEOPLE</p>
+              <p className="mt-1 text-2xl text-[#E8E5DF]">Built together.</p>
+            </div>
+          </div>
+
+          <span className="absolute bottom-0 left-8 z-30 text-xs tracking-[0.25em] text-[#3B82D6]">FIG. 01 — THE COMMUNITY</span>
         </div>
       </div>
     </section>
@@ -324,19 +299,19 @@ function Hero() {
 
 function Highlights() {
   const highlights = [
-    { value: "AI", label: "Artificial Intelligence", color: "border-blue-500" },
-    { value: "ML", label: "Machine Learning", color: "border-violet-500" },
-    { value: "DEV", label: "Development", color: "border-cyan-500" },
-    { value: "INNOVATE", label: "Ideas into Impact", color: "border-indigo-500" },
+    { value: "AI", label: "Artificial Intelligence", color: "border-[#3B82D6]" },
+    { value: "ML", label: "Machine Learning", color: "border-[#6F91D8]" },
+    { value: "DEV", label: "Development", color: "border-[#1E4F9A]" },
+    { value: "INNOVATE", label: "Ideas into Impact", color: "border-[#6F91D8]" },
   ];
 
   return (
-    <section className="border-y border-white/10 bg-[#0D1222] py-10">
+    <section className="border-y border-[#3B82D6]/20 bg-[#080D24] py-10">
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-6 md:grid-cols-4 lg:px-8">
         {highlights.map((item) => (
-          <div key={item.value} className={`rounded-xl border border-white/10 border-t-2 ${item.color} bg-[#11182B] px-5 py-6`}>
-            <h3 className="text-3xl font-bold text-white">{item.value}</h3>
-            <p className="mt-2 text-xs font-medium uppercase tracking-wider text-slate-500">{item.label}</p>
+          <div key={item.value} className={`rounded-xl border border-[#3B82D6]/20 border-t-2 ${item.color} bg-[#080D24] px-5 py-6`}>
+            <h3 className="text-3xl font-bold text-[#E8E5DF]">{item.value}</h3>
+            <p className="mt-2 text-xs font-medium uppercase tracking-wider text-[#8B929F]">{item.label}</p>
           </div>
         ))}
       </div>
@@ -351,27 +326,27 @@ function About() {
         <div>
           <SectionHeading eyebrow="Who We Are" title="Where curiosity meets technology." />
 
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-[#11182B]">
-            <BrainCircuit size={100} strokeWidth={1} className="text-blue-400/60" />
+          <div className="flex h-64 items-center justify-center rounded-2xl border border-[#3B82D6]/20 bg-[#080D24]">
+            <BrainCircuit size={100} strokeWidth={1} className="text-[#3B82D6]/60" />
           </div>
         </div>
 
         <div className="flex flex-col justify-center">
-          <p className="text-base leading-8 text-slate-400">AI Nexus is a student-driven technical community under the Department of Computer Science and Engineering (AI & ML) at Acropolis Institute of Technology and Research.</p>
+          <p className="text-base leading-8 text-[#AEBBD0]">AI Nexus is a student-driven technical community under the Department of Computer Science and Engineering (AI & ML) at Acropolis Institute of Technology and Research.</p>
 
-          <p className="mt-5 text-base leading-8 text-slate-400">We bring together students who are passionate about Artificial Intelligence, programming and emerging technologies. Through projects, workshops, technical sessions and collaborative events, we encourage learning by building.</p>
+          <p className="mt-5 text-base leading-8 text-[#AEBBD0]">We bring together students who are passionate about Artificial Intelligence, programming and emerging technologies. Through projects, workshops, technical sessions and collaborative events, we encourage learning by building.</p>
 
           <div className="mt-9 grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-white/10 bg-[#0D1222] p-5">
-              <BrainCircuit className="text-blue-400" size={25} />
-              <h3 className="mt-4 font-semibold text-white">Our Vision</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500">Encourage curiosity and technological exploration.</p>
+            <div className="rounded-xl border border-[#3B82D6]/20 bg-[#080D24] p-5">
+              <BrainCircuit className="text-[#3B82D6]" size={25} />
+              <h3 className="mt-4 font-semibold text-[#E8E5DF]">Our Vision</h3>
+              <p className="mt-2 text-sm leading-6 text-[#8B929F]">Encourage curiosity and technological exploration.</p>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-[#0D1222] p-5">
-              <Users className="text-violet-400" size={25} />
-              <h3 className="mt-4 font-semibold text-white">Our Community</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-500">Learn, collaborate and grow together.</p>
+            <div className="rounded-xl border border-[#3B82D6]/20 bg-[#080D24] p-5">
+              <Users className="text-[#6F91D8]" size={25} />
+              <h3 className="mt-4 font-semibold text-[#E8E5DF]">Our Community</h3>
+              <p className="mt-2 text-sm leading-6 text-[#8B929F]">Learn, collaborate and grow together.</p>
             </div>
           </div>
         </div>
@@ -382,7 +357,7 @@ function About() {
 
 function WhatWeDo() {
   return (
-    <section className="border-y border-white/10 bg-[#0D1222] py-24">
+    <section className="border-y border-[#3B82D6]/20 bg-[#080D24] py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <SectionHeading eyebrow="Explore" title="Learn. Build. Innovate." description="We believe the best way to understand technology is to work with it. Explore the areas that drive our community." />
 
@@ -391,16 +366,16 @@ function WhatWeDo() {
             const Icon = activity.icon;
 
             return (
-              <div key={activity.title} className="rounded-2xl border border-white/10 bg-[#11182B] p-8 transition hover:border-blue-400/40">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+              <div key={activity.title} className="rounded-2xl border border-[#3B82D6]/20 bg-[#080D24] p-8 transition hover:border-[#3B82D6]/40">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#3B82D6]/10 text-[#3B82D6]">
                   <Icon size={28} strokeWidth={1.7} />
                 </div>
 
-                <p className="mt-8 text-xs font-semibold tracking-widest text-slate-600">0{index + 1}</p>
+                <p className="mt-8 text-xs font-semibold tracking-widest text-[#8B929F]">0{index + 1}</p>
 
-                <h3 className="mt-3 text-xl font-semibold text-white">{activity.title}</h3>
+                <h3 className="mt-3 text-xl font-semibold text-[#E8E5DF]">{activity.title}</h3>
 
-                <p className="mt-4 text-sm leading-7 text-slate-400">{activity.description}</p>
+                <p className="mt-4 text-sm leading-7 text-[#AEBBD0]">{activity.description}</p>
               </div>
             );
           })}
@@ -416,17 +391,17 @@ function Events() {
       <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <SectionHeading eyebrow="What's Happening" title="Events & Experiences." description="Discover workshops, hackathons and opportunities to learn, compete and collaborate." />
 
-        <Link to="/events" className="mb-12 inline-flex w-fit items-center gap-2 text-sm font-semibold text-blue-400 hover:text-blue-300">
+        <Link to="/events" className="mb-12 inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#3B82D6] hover:text-[#6F91D8]">
           View all events <ArrowUpRight size={17} />
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-white/15 bg-[#0D1222] px-6 py-16 text-center">
-        <CalendarDays size={38} className="mx-auto text-blue-400" />
+      <div className="rounded-2xl border border-dashed border-[#E8E5DF]/30 bg-[#080D24] px-6 py-16 text-center">
+        <CalendarDays size={38} className="mx-auto text-[#3B82D6]" />
 
-        <h3 className="mt-6 text-xl font-semibold text-white">Upcoming events will appear here.</h3>
+        <h3 className="mt-6 text-xl font-semibold text-[#E8E5DF]">Upcoming events will appear here.</h3>
 
-        <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-500">Stay connected with AI Nexus for upcoming events, workshops, competitions and community activities.</p>
+        <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[#8B929F]">Stay connected with AI Nexus for upcoming events, workshops, competitions and community activities.</p>
       </div>
     </section>
   );
@@ -434,14 +409,14 @@ function Events() {
 
 function ProfileCard({ member }) {
   return (
-    <div className="group overflow-hidden rounded-xl border border-white/10 bg-[#11182B] transition hover:-translate-y-1 hover:border-blue-400/40">
+    <div className="group overflow-hidden rounded-xl border border-[#3B82D6]/20 bg-[#080D24] transition hover:-translate-y-1 hover:border-[#3B82D6]/40">
       <div className="aspect-square overflow-hidden bg-[#18213A]">
         <img src={member.image} alt={member.name} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
       </div>
 
       <div className="p-4 text-center">
-        <h3 className="text-sm font-semibold text-white">{member.name}</h3>
-        <p className="mt-2 text-xs leading-5 text-blue-400">{member.role}</p>
+        <h3 className="text-sm font-semibold text-[#E8E5DF]">{member.name}</h3>
+        <p className="mt-2 text-xs leading-5 text-[#3B82D6]">{member.role}</p>
       </div>
     </div>
   );
@@ -449,12 +424,12 @@ function ProfileCard({ member }) {
 
 function Team() {
   return (
-    <section id="team" className="border-y border-white/10 bg-[#0D1222] py-24">
+    <section id="team" className="border-y border-[#3B82D6]/20 bg-[#080D24] py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <SectionHeading eyebrow="The People Behind AI Nexus" title="Meet Our Team." description="A community is built by the people behind it. Meet the faculty and students who guide AI Nexus." centered />
 
         <div className="mb-20">
-          <h3 className="mb-7 text-center text-xl font-semibold text-white">Faculty</h3>
+          <h3 className="mb-7 text-center text-xl font-semibold text-[#E8E5DF]">Faculty</h3>
 
           <div className="mx-auto grid max-w-xl grid-cols-2 gap-5">
             {faculty.map((member) => (
@@ -464,7 +439,7 @@ function Team() {
         </div>
 
         <div>
-          <h3 className="mb-7 text-center text-xl font-semibold text-white">Our Team</h3>
+          <h3 className="mb-7 text-center text-xl font-semibold text-[#E8E5DF]">Our Team</h3>
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {studentTeam.map((member) => (
@@ -484,7 +459,7 @@ function Gallery() {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {galleryImages.map((image, index) => (
-          <div key={image} className={`overflow-hidden rounded-xl border border-white/10 bg-[#11182B] ${index === 0 ? "md:col-span-2 md:row-span-2" : ""}`}>
+          <div key={image} className={`overflow-hidden rounded-xl border border-[#3B82D6]/20 bg-[#080D24] ${index === 0 ? "md:col-span-2 md:row-span-2" : ""}`}>
             <img src={image} alt="AI Nexus gallery placeholder" loading="lazy" className={`h-full w-full object-cover transition duration-500 hover:scale-105 ${index === 0 ? "min-h-64 md:min-h-[420px]" : "min-h-48"}`} />
           </div>
         ))}
@@ -535,32 +510,32 @@ function Contact() {
   };
 
   return (
-    <section id="contact" className="border-y border-white/10 bg-[#0D1222] py-24">
+    <section id="contact" className="border-y border-[#3B82D6]/20 bg-[#080D24] py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <SectionHeading eyebrow="Get in Touch" title="Let's Start a Conversation." description="Have a question, an idea or want to collaborate with AI Nexus? Drop us a message." centered />
 
-        <div className="mx-auto max-w-2xl rounded-2xl border border-white/10 bg-[#11182B] p-6 sm:p-9">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-[#3B82D6]/20 bg-[#080D24] p-6 sm:p-9">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">Your Name</label>
-              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Enter your name" required className="w-full rounded-lg border border-white/10 bg-[#0D1222] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-500" />
+              <label className="mb-2 block text-sm font-medium text-[#AEBBD0]">Your Name</label>
+              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Enter your name" required className="w-full rounded-lg border border-[#3B82D6]/20 bg-[#080D24] px-4 py-3 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">Email Address</label>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" required className="w-full rounded-lg border border-white/10 bg-[#0D1222] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-500" />
+              <label className="mb-2 block text-sm font-medium text-[#AEBBD0]">Email Address</label>
+              <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="you@example.com" required className="w-full rounded-lg border border-[#3B82D6]/20 bg-[#080D24] px-4 py-3 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-300">Your Message</label>
-              <textarea name="message" value={formData.message} onChange={handleChange} placeholder="Tell us what's on your mind..." rows={5} required className="w-full resize-none rounded-lg border border-white/10 bg-[#0D1222] px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-blue-500" />
+              <label className="mb-2 block text-sm font-medium text-[#AEBBD0]">Your Message</label>
+              <textarea name="message" value={formData.message} onChange={handleChange} placeholder="Tell us what's on your mind..." rows={5} required className="w-full resize-none rounded-lg border border-[#3B82D6]/20 bg-[#080D24] px-4 py-3 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
             </div>
 
             {status === "success" && <p className="text-sm text-green-400">Your message has been sent successfully!</p>}
 
             {status === "error" && <p className="text-sm text-red-400">Something went wrong. Please try again later.</p>}
 
-            <button type="submit" disabled={status === "sending"} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60">
+            <button type="submit" disabled={status === "sending"} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#1E4F9A] px-6 py-3.5 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:opacity-60">
               {status === "sending" ? "Sending..." : "Send Message"}
               {status !== "sending" && <ArrowRight size={17} />}
             </button>
@@ -573,23 +548,23 @@ function Contact() {
 
 function Footer() {
   return (
-    <footer className="bg-[#070A13]">
+    <footer className="bg-[#00001F]">
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
         <div className="flex flex-col justify-between gap-10 md:flex-row">
           <div className="max-w-sm">
-            <a href="#home" className="text-xl font-bold text-white">
-              AI <span className="text-blue-400">NEXUS</span>
+            <a href="#home" className="text-xl font-bold text-[#E8E5DF]">
+              AI <span className="text-[#3B82D6]">NEXUS</span>
             </a>
 
-            <p className="mt-4 text-sm leading-7 text-slate-500">Building beyond boundaries through curiosity, collaboration and technology.</p>
+            <p className="mt-4 text-sm leading-7 text-[#8B929F]">Building beyond boundaries through curiosity, collaboration and technology.</p>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-white">Quick Links</h4>
+            <h4 className="text-sm font-semibold text-[#E8E5DF]">Quick Links</h4>
 
             <div className="mt-5 grid grid-cols-2 gap-x-8 gap-y-3">
               {navigation.map((item) => (
-                <a key={item.label} href={item.href} className="text-sm text-slate-500 transition hover:text-blue-400">
+                <a key={item.label} href={item.href} className="text-sm text-[#8B929F] transition hover:text-[#3B82D6]">
                   {item.label}
                 </a>
               ))}
@@ -597,7 +572,7 @@ function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-slate-600 sm:flex-row sm:justify-between">
+        <div className="mt-12 flex flex-col gap-3 border-t border-[#3B82D6]/20 pt-6 text-xs text-[#8B929F] sm:flex-row sm:justify-between">
           <p>© {new Date().getFullYear()} AI Nexus. All rights reserved.</p>
           <p>Acropolis Institute of Technology and Research</p>
         </div>
@@ -608,7 +583,33 @@ function Footer() {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-[#080B16] font-sans text-white">
+    <div className="starfield min-h-screen bg-[#00001F] font-editorial text-[#E8E5DF]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+        .font-editorial {
+          font-family: "Playfair Display", "Iowan Old Style", Baskerville, Georgia, serif;
+        }
+        .starfield {
+          background-image:
+            radial-gradient(1px 1px at 8% 18%, rgba(232,229,223,.75) 50%, transparent 100%),
+            radial-gradient(1px 1px at 24% 72%, rgba(174,187,208,.6) 50%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 48% 28%, rgba(232,229,223,.65) 50%, transparent 100%),
+            radial-gradient(1px 1px at 71% 82%, rgba(111,145,216,.8) 50%, transparent 100%),
+            radial-gradient(1px 1px at 88% 34%, rgba(232,229,223,.7) 50%, transparent 100%),
+            radial-gradient(1px 1px at 94% 68%, rgba(174,187,208,.55) 50%, transparent 100%);
+          background-size: 420px 360px;
+        }
+        .blueprint {
+          background-image:
+            linear-gradient(rgba(59,130,214,.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(59,130,214,.12) 1px, transparent 1px);
+          background-size: 28px 28px;
+        }
+        .photo-grain {
+          background-image: linear-gradient(135deg, rgba(8,13,36,.05), rgba(0,0,31,.55)),
+            repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);
+        }
+      `}</style>
       <Navbar />
 
       <main>
