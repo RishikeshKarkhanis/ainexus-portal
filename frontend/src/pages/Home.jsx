@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { ArrowRight, ArrowUpRight, BrainCircuit, CalendarDays, Camera, Code2, Cpu, Mail, MapPin, Menu, X, Sparkles, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { UserRound, LogOut } from "lucide-react";
+import { apiRequest } from "../lib/api";
 
 const faculty = [
   {
