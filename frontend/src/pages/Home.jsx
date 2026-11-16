@@ -247,14 +247,14 @@ function Hero() {
           </div>
 
           <h1 className="max-w-xl text-6xl leading-[0.98] tracking-[-0.045em] text-[#E8E5DF] sm:text-7xl lg:text-8xl">
-            Building<br />Beyond<br /><span className="text-[#6F91D8]">Boundaries.</span>
+            Building
+            <br />
+            Beyond
+            <br />
+            <span className="text-[#6F91D8]">Boundaries.</span>
           </h1>
-          <p className="mt-5 max-w-lg font-editorial text-3xl italic leading-tight text-[#AEBBD0] sm:text-4xl">
-            A student-driven community at Acropolis Institute of Technology and Research.
-          </p>
-          <p className="mt-8 max-w-xl text-base leading-8 text-[#AEBBD0] sm:text-lg">
-            We explore Artificial Intelligence, build technology and turn ambitious ideas into meaningful innovation.
-          </p>
+          <p className="mt-5 max-w-lg font-editorial text-3xl italic leading-tight text-[#AEBBD0] sm:text-4xl">A student-driven community at Acropolis Institute of Technology and Research.</p>
+          <p className="mt-8 max-w-xl text-base leading-8 text-[#AEBBD0] sm:text-lg">We explore Artificial Intelligence, build technology and turn ambitious ideas into meaningful innovation.</p>
 
           <div className="mt-10 flex flex-wrap gap-4">
             <a href="#events" className="inline-flex items-center gap-4 bg-[#1E4F9A] px-7 py-4 text-sm text-[#E8E5DF] transition hover:bg-[#3B82D6]">
@@ -489,22 +489,23 @@ function Contact() {
     setStatus("sending");
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"}/api/contact`, {
+      await apiRequest("/api/contact", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          message: formData.message.trim(),
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error("Unable to send your message.");
-      }
-
       setStatus("success");
-      setFormData({ name: "", email: "", message: "" });
+      setFormData({
+        name: "",
+        email: "",
+        message: "",
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Contact form error:", error);
       setStatus("error");
     }
   };
