@@ -1,4 +1,3 @@
-
 package com.ainexus.backend.service;
 
 import io.jsonwebtoken.Claims;
@@ -21,12 +20,15 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    @Value("${ADMIN_JWT_EXPIRATION:900000}")
+    private long adminExpiration;
+
     private SecretKey getSigningKey() {
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    // Generate JWT token
+    // Generate normal user JWT
     public String generateToken(String email) {
 
         Date now = new Date();
@@ -40,9 +42,37 @@ public class JwtService {
                 .compact();
     }
 
+    // Generate separate admin JWT after successful OTP verification
+    public String generateAdminToken(String email) {
+
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + adminExpiration);
+
+        return Jwts.builder()
+                .subject(email)
+                .claim("tokenType", "ADMIN")
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey())
+                .compact();
+    }
+
     // Extract email from JWT
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
+    }
+
+    // Check whether the JWT is an admin token
+    public boolean isAdminToken(String token) {
+        try {
+            String tokenType = extractAllClaims(token)
+                    .get("tokenType", String.class);
+
+            return "ADMIN".equals(tokenType);
+
+        } catch (Exception exception) {
+            return false;
+        }
     }
 
     // Extract all claims

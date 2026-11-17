@@ -111,4 +111,29 @@ public class EmailService {
     }
 
 
+    public void sendAdminOtp(String recipientEmail, String otp) {
+
+        SimpleMailMessage message = new SimpleMailMessage();
+
+        message.setFrom(fromEmail);
+        message.setTo(recipientEmail);
+        message.setSubject("AI Nexus Portal - Admin Login Verification");
+
+        message.setText(
+                "Hello,\n\n" +
+                        "A request was made to access the AI Nexus Admin Panel.\n\n" +
+                        "Your admin verification OTP is: " + otp + "\n\n" +
+                        "This OTP is valid for 5 minutes.\n" +
+                        "You have a maximum of 5 verification attempts.\n\n" +
+                        "If you did not initiate this request, please ignore this email " +
+                        "and contact the AI Nexus Club team.\n\n" +
+                        "Regards,\n" +
+                        "AI Nexus Club"
+        );
+
+        mailSender.send(message);
+    }
+
+
+
 }
