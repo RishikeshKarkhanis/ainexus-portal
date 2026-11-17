@@ -1,3 +1,4 @@
+
 package com.ainexus.backend.entity;
 
 import jakarta.persistence.*;
@@ -39,6 +40,15 @@ public class Event {
 
     @Column(name = "registration_status", nullable = false)
     private String registrationStatus;
+
+    @Column(name = "thumbnail_path")
+    private String thumbnailPath;
+
+    @Column(name = "min_team_size")
+    private Integer minTeamSize;
+
+    @Column(name = "max_team_size")
+    private Integer maxTeamSize;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

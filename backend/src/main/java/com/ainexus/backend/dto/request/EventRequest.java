@@ -1,3 +1,4 @@
+
 package com.ainexus.backend.dto.request;
 
 import jakarta.validation.constraints.*;
@@ -30,4 +31,10 @@ public class EventRequest {
 
     @NotBlank(message = "Registration status is required")
     private String registrationStatus;
+
+    @Min(value = 1, message = "Minimum team size must be at least 1")
+    private Integer minTeamSize;
+
+    @Min(value = 1, message = "Maximum team size must be at least 1")
+    private Integer maxTeamSize;
 }

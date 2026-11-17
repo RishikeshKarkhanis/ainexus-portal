@@ -1,3 +1,4 @@
+
 package com.ainexus.backend.dto.response;
 
 import java.time.LocalDate;
@@ -18,5 +19,9 @@ public class EventResponse {
     private Integer registrationFee;
     private Boolean collegeOnly;
     private String registrationStatus;
+    private String thumbnailPath;
     private LocalDateTime createdAt;
+
+    private Integer minTeamSize;
+    private Integer maxTeamSize;
 }

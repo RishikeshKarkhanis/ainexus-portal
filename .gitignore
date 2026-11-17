@@ -1,0 +1,5 @@
+**/.DS_Store
+frontend/.env
+backend/target/
+backend/src/main/resources/application.properties
+backend/backend-java.zip
