@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState } from "react";
-
 import { loginUser, registerUser, logoutUser, getCurrentUser } from "../services/auth";
 
 const AuthContext = createContext(null);
@@ -10,13 +9,23 @@ export function AuthProvider({ children }) {
 
   // Restore user session when application starts
   useEffect(() => {
-    const currentUser = getCurrentUser();
+    try {
+      const currentUser = getCurrentUser();
 
-    if (localStorage.getItem("authToken")) {
-      setUser(currentUser);
+      if (localStorage.getItem("authToken") && currentUser) {
+        setUser({
+          userId: currentUser.userId,
+          name: currentUser.name,
+          email: currentUser.email,
+          isAdmin: currentUser.isAdmin === true,
+        });
+      }
+    } catch (error) {
+      console.error("Unable to restore user session:", error);
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, []);
 
   // Login
@@ -27,6 +36,7 @@ export function AuthProvider({ children }) {
       userId: data.userId,
       name: data.name,
       email: data.email,
+      isAdmin: data.isAdmin === true,
     };
 
     setUser(userData);
@@ -49,6 +59,7 @@ export function AuthProvider({ children }) {
     user,
     loading,
     isAuthenticated: Boolean(user),
+    isAdmin: user?.isAdmin === true,
     login,
     register,
     logout,

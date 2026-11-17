@@ -90,7 +90,8 @@ public class AuthService {
                 900000,
                 user.getUserId(),
                 user.getName(),
-                user.getEmail()
+                user.getEmail(),
+                user.isAdmin()
         );
     }
 }

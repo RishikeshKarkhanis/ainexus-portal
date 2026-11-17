@@ -1,5 +1,7 @@
+
 package com.ainexus.backend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -16,4 +18,7 @@ public class LoginResponse {
     private UUID userId;
     private String name;
     private String email;
+
+    @JsonProperty("isAdmin")
+    private boolean admin;
 }

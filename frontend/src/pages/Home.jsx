@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { ArrowRight, ArrowUpRight, BrainCircuit, CalendarDays, Camera, Code2, Cpu, Mail, MapPin, Menu, X, Sparkles, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { UserRound, LogOut } from "lucide-react";
+import { UserRound, LogOut, ShieldCheck } from "lucide-react";
 import { apiRequest } from "../lib/api";
 
 const faculty = [
@@ -129,6 +129,7 @@ const navigation = [
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
   const { user, isAuthenticated, logout } = useAuth();
 
   const handleLogout = () => {
@@ -140,16 +141,19 @@ function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#3B82D6]/30 bg-[#00001F]/95 backdrop-blur-lg">
       <nav className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-6 md:flex-row md:items-center md:justify-between lg:px-12">
+        {/* Logo */}
         <a href="#home" className="flex items-center gap-4">
           <span className="flex h-10 w-10 items-center justify-center text-3xl leading-none text-[#3B82D6]">
             <img src="/icons/favicon.ico" alt="AI Nexus Logo" className="h-8 w-8 object-cover" />
           </span>
+
           <span className="flex flex-col">
             <span className="text-xl tracking-[0.22em] text-[#E8E5DF]">AI NEXUS</span>
             <span className="mt-1 text-[10px] tracking-[0.28em] text-[#AEBBD0]">ACROPOLIS INSTITUTE</span>
           </span>
         </a>
 
+        {/* Desktop navigation */}
         <div className="hidden items-center gap-x-7 gap-y-3 text-sm text-[#AEBBD0] lg:flex">
           {navigation.map((item) => (
             <a key={item.label} href={item.href} className="transition hover:text-[#E8E5DF]">
@@ -158,6 +162,7 @@ function Navbar() {
           ))}
         </div>
 
+        {/* Desktop user dropdown */}
         <div className="relative hidden lg:block">
           {!isAuthenticated ? (
             <Link to="/auth" className="inline-flex items-center gap-2 rounded-full border border-[#3B82D6]/50 px-5 py-2 text-sm text-[#E8E5DF] transition hover:bg-[#080D24]">
@@ -167,7 +172,9 @@ function Navbar() {
             <>
               <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-3 rounded-full border border-[#3B82D6]/50 px-5 py-2 text-sm text-[#E8E5DF] transition hover:bg-[#080D24]">
                 <UserRound size={17} className="text-[#3B82D6]" />
+
                 <span>{user?.name?.split(" ")[0] || "Account"}</span>
+
                 <span className={`text-[#AEBBD0] transition ${profileOpen ? "rotate-180" : ""}`}>⌄</span>
               </button>
 
@@ -175,13 +182,26 @@ function Navbar() {
                 <div className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-xl border border-[#3B82D6]/30 bg-[#080D24] p-2 shadow-xl">
                   <div className="border-b border-[#3B82D6]/20 px-3 py-3">
                     <p className="text-sm text-[#E8E5DF]">{user?.name}</p>
+
                     <p className="mt-1 truncate text-xs text-[#AEBBD0]">{user?.email}</p>
                   </div>
+
                   <Link to="/profile" onClick={() => setProfileOpen(false)} className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#AEBBD0] transition hover:bg-white/5 hover:text-[#E8E5DF]">
-                    <UserRound size={17} /> My Profile
+                    <UserRound size={17} />
+                    My Profile
                   </Link>
+
+                  {/* Admin Settings */}
+                  {user?.isAdmin === true && (
+                    <Link to="/admin" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#3B82D6] transition hover:bg-white/5">
+                      <ShieldCheck size={17} />
+                      Admin Settings
+                    </Link>
+                  )}
+
                   <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#D58C91] transition hover:bg-red-500/10">
-                    <LogOut size={17} /> Logout
+                    <LogOut size={17} />
+                    Logout
                   </button>
                 </div>
               )}
@@ -189,11 +209,13 @@ function Navbar() {
           )}
         </div>
 
+        {/* Mobile menu toggle */}
         <button className="text-[#E8E5DF] lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">
           {menuOpen ? <X size={25} /> : <Menu size={25} />}
         </button>
       </nav>
 
+      {/* Mobile navigation */}
       {menuOpen && (
         <div className="border-t border-[#3B82D6]/20 bg-[#00001F] px-6 py-5 lg:hidden">
           <div className="flex flex-col gap-5">
@@ -202,6 +224,7 @@ function Navbar() {
                 {item.label}
               </a>
             ))}
+
             {!isAuthenticated ? (
               <Link to="/auth" onClick={() => setMenuOpen(false)} className="w-fit rounded-full border border-[#3B82D6]/50 px-5 py-2.5 text-sm text-[#E8E5DF]">
                 Login / Register
@@ -210,13 +233,26 @@ function Navbar() {
               <>
                 <div className="border-t border-[#3B82D6]/20 pt-4">
                   <p className="text-sm text-[#E8E5DF]">{user?.name}</p>
+
                   <p className="mt-1 text-xs text-[#AEBBD0]">{user?.email}</p>
                 </div>
+
                 <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 text-sm text-[#AEBBD0] hover:text-[#E8E5DF]">
-                  <UserRound size={17} /> My Profile
+                  <UserRound size={17} />
+                  My Profile
                 </Link>
+
+                {/* Mobile Admin Settings */}
+                {user?.isAdmin === true && (
+                  <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 text-sm text-[#3B82D6]">
+                    <ShieldCheck size={17} />
+                    Admin Settings
+                  </Link>
+                )}
+
                 <button onClick={handleLogout} className="flex items-center gap-3 text-left text-sm text-[#D58C91]">
-                  <LogOut size={17} /> Logout
+                  <LogOut size={17} />
+                  Logout
                 </button>
               </>
             )}
