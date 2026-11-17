@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { ArrowRight, ArrowUpRight, BrainCircuit, CalendarDays, Camera, Code2, Cpu, Mail, MapPin, Menu, X, Sparkles, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { UserRound, LogOut, ShieldCheck } from "lucide-react";
+import { UserRound, LogOut, Sun, Moon } from "lucide-react";
 import { apiRequest } from "../lib/api";
 
 const faculty = [
@@ -126,10 +126,9 @@ const navigation = [
   { label: "Contact", href: "#contact" },
 ];
 
-function Navbar() {
+function Navbar({ isLight, onToggleTheme }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-
   const { user, isAuthenticated, logout } = useAuth();
 
   const handleLogout = () => {
@@ -141,19 +140,16 @@ function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#3B82D6]/30 bg-[#00001F]/95 backdrop-blur-lg">
       <nav className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-6 md:flex-row md:items-center md:justify-between lg:px-12">
-        {/* Logo */}
         <a href="#home" className="flex items-center gap-4">
           <span className="flex h-10 w-10 items-center justify-center text-3xl leading-none text-[#3B82D6]">
             <img src="/icons/favicon.ico" alt="AI Nexus Logo" className="h-8 w-8 object-cover" />
           </span>
-
           <span className="flex flex-col">
             <span className="text-xl tracking-[0.22em] text-[#E8E5DF]">AI NEXUS</span>
             <span className="mt-1 text-[10px] tracking-[0.28em] text-[#AEBBD0]">ACROPOLIS INSTITUTE</span>
           </span>
         </a>
 
-        {/* Desktop navigation */}
         <div className="hidden items-center gap-x-7 gap-y-3 text-sm text-[#AEBBD0] lg:flex">
           {navigation.map((item) => (
             <a key={item.label} href={item.href} className="transition hover:text-[#E8E5DF]">
@@ -162,7 +158,16 @@ function Navbar() {
           ))}
         </div>
 
-        {/* Desktop user dropdown */}
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          aria-label={isLight ? "Switch to dark theme" : "Switch to light theme"}
+          title={isLight ? "Switch to dark theme" : "Switch to light theme"}
+          className="hidden lg:inline-flex items-center justify-center rounded-full border border-[#3B82D6]/50 p-2.5 text-[#3B82D6] transition hover:bg-[#3B82D6]/10"
+        >
+          {isLight ? <Moon size={18} /> : <Sun size={18} />}
+        </button>
+
         <div className="relative hidden lg:block">
           {!isAuthenticated ? (
             <Link to="/auth" className="inline-flex items-center gap-2 rounded-full border border-[#3B82D6]/50 px-5 py-2 text-sm text-[#E8E5DF] transition hover:bg-[#080D24]">
@@ -172,9 +177,7 @@ function Navbar() {
             <>
               <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-3 rounded-full border border-[#3B82D6]/50 px-5 py-2 text-sm text-[#E8E5DF] transition hover:bg-[#080D24]">
                 <UserRound size={17} className="text-[#3B82D6]" />
-
                 <span>{user?.name?.split(" ")[0] || "Account"}</span>
-
                 <span className={`text-[#AEBBD0] transition ${profileOpen ? "rotate-180" : ""}`}>⌄</span>
               </button>
 
@@ -182,26 +185,13 @@ function Navbar() {
                 <div className="absolute right-0 top-full mt-3 w-56 overflow-hidden rounded-xl border border-[#3B82D6]/30 bg-[#080D24] p-2 shadow-xl">
                   <div className="border-b border-[#3B82D6]/20 px-3 py-3">
                     <p className="text-sm text-[#E8E5DF]">{user?.name}</p>
-
                     <p className="mt-1 truncate text-xs text-[#AEBBD0]">{user?.email}</p>
                   </div>
-
                   <Link to="/profile" onClick={() => setProfileOpen(false)} className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#AEBBD0] transition hover:bg-white/5 hover:text-[#E8E5DF]">
-                    <UserRound size={17} />
-                    My Profile
+                    <UserRound size={17} /> My Profile
                   </Link>
-
-                  {/* Admin Settings */}
-                  {user?.isAdmin === true && (
-                    <Link to="/admin" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#3B82D6] transition hover:bg-white/5">
-                      <ShieldCheck size={17} />
-                      Admin Settings
-                    </Link>
-                  )}
-
                   <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#D58C91] transition hover:bg-red-500/10">
-                    <LogOut size={17} />
-                    Logout
+                    <LogOut size={17} /> Logout
                   </button>
                 </div>
               )}
@@ -209,13 +199,21 @@ function Navbar() {
           )}
         </div>
 
-        {/* Mobile menu toggle */}
-        <button className="text-[#E8E5DF] lg:hidden" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">
+        <div className="flex items-center gap-3 lg:hidden">
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            aria-label={isLight ? "Switch to dark theme" : "Switch to light theme"}
+            className="rounded-full border border-[#3B82D6]/50 p-2 text-[#3B82D6] transition hover:bg-[#3B82D6]/10"
+          >
+            {isLight ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+          <button className="text-[#E8E5DF]" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">
           {menuOpen ? <X size={25} /> : <Menu size={25} />}
-        </button>
+          </button>
+        </div>
       </nav>
 
-      {/* Mobile navigation */}
       {menuOpen && (
         <div className="border-t border-[#3B82D6]/20 bg-[#00001F] px-6 py-5 lg:hidden">
           <div className="flex flex-col gap-5">
@@ -224,7 +222,6 @@ function Navbar() {
                 {item.label}
               </a>
             ))}
-
             {!isAuthenticated ? (
               <Link to="/auth" onClick={() => setMenuOpen(false)} className="w-fit rounded-full border border-[#3B82D6]/50 px-5 py-2.5 text-sm text-[#E8E5DF]">
                 Login / Register
@@ -233,26 +230,13 @@ function Navbar() {
               <>
                 <div className="border-t border-[#3B82D6]/20 pt-4">
                   <p className="text-sm text-[#E8E5DF]">{user?.name}</p>
-
                   <p className="mt-1 text-xs text-[#AEBBD0]">{user?.email}</p>
                 </div>
-
                 <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 text-sm text-[#AEBBD0] hover:text-[#E8E5DF]">
-                  <UserRound size={17} />
-                  My Profile
+                  <UserRound size={17} /> My Profile
                 </Link>
-
-                {/* Mobile Admin Settings */}
-                {user?.isAdmin === true && (
-                  <Link to="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 text-sm text-[#3B82D6]">
-                    <ShieldCheck size={17} />
-                    Admin Settings
-                  </Link>
-                )}
-
                 <button onClick={handleLogout} className="flex items-center gap-3 text-left text-sm text-[#D58C91]">
-                  <LogOut size={17} />
-                  Logout
+                  <LogOut size={17} /> Logout
                 </button>
               </>
             )}
@@ -622,8 +606,10 @@ function Footer() {
 }
 
 export default function Home() {
+  const [isLight, setIsLight] = useState(false);
+
   return (
-    <div className="starfield min-h-screen bg-[#00001F] font-editorial text-[#E8E5DF]">
+    <div className={`home-editorial starfield min-h-screen font-editorial ${isLight ? "light-theme" : "bg-[#00001F] text-[#E8E5DF]"}`}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
         .font-editorial {
@@ -649,8 +635,161 @@ export default function Home() {
           background-image: linear-gradient(135deg, rgba(8,13,36,.05), rgba(0,0,31,.55)),
             repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px);
         }
+
+        /* Light theme: presentation-only overrides; application logic is unchanged. */
+        .light-theme {
+          background-color: #F4F3EF;
+          color: #00001F;
+          transition: background-color .25s ease, color .25s ease;
+        }
+        .light-theme [class*="bg-[#00001F]"],
+        .light-theme [class*="bg-[#080D24]"] {
+          background-color: #FFFFFF !important;
+        }
+        .light-theme header,
+        .light-theme [class*="bg-[#080D24]"] {
+          background-color: #FFFFFF !important;
+        }
+        .light-theme [class*="text-[#E8E5DF]"] { color: #00001F !important; }
+        .light-theme [class*="text-[#AEBBD0]"] { color: #46536A !important; }
+        .light-theme [class*="text-[#8B929F]"] { color: #697386 !important; }
+        .light-theme [class*="border-[#E8E5DF]"] { border-color: rgba(0,0,31,.25) !important; }
+        .light-theme [class*="border-[#3B82D6]"] { border-color: rgba(30,79,154,.25) !important; }
+        .light-theme [class*="bg-[#18213A]"] { background-color: #E8EAF0 !important; }
+        .light-theme input,
+        .light-theme textarea {
+          background-color: #FFFFFF !important;
+          color: #00001F !important;
+        }
+        .light-theme input::placeholder,
+        .light-theme textarea::placeholder { color: #8B929F !important; }
+        .light-theme.starfield {
+          background-image:
+            radial-gradient(1px 1px at 8% 18%, rgba(30,79,154,.30) 50%, transparent 100%),
+            radial-gradient(1px 1px at 24% 72%, rgba(59,130,214,.25) 50%, transparent 100%),
+            radial-gradient(1.5px 1.5px at 48% 28%, rgba(30,79,154,.25) 50%, transparent 100%);
+        }
+        .light-theme .blueprint {
+          background-image:
+            linear-gradient(rgba(30,79,154,.10) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(30,79,154,.10) 1px, transparent 1px);
+        }
+        /* Preserve readable ivory text over the dark photo overlays and blue buttons. */
+        .light-theme .photo-grain [class*="text-[#E8E5DF]"] { color: #E8E5DF !important; }
+        .light-theme a[class*="bg-[#1E4F9A]"],
+        .light-theme button[class*="bg-[#1E4F9A]"] { color: #E8E5DF !important; }
+        /* AI Nexus editorial system — visual-only refinements */
+        .home-editorial {
+          --nexus-ink: #00001F;
+          --nexus-panel: #080D24;
+          --nexus-paper: #E8E5DF;
+          --nexus-muted: #AEBBD0;
+          --nexus-blue: #3B82D6;
+          --nexus-line: rgba(111,145,216,.28);
+          isolation: isolate;
+        }
+        .home-editorial header {
+          background: rgba(0,0,31,.88) !important;
+          border-color: var(--nexus-line) !important;
+          box-shadow: 0 12px 40px rgba(0,0,20,.12);
+        }
+        .home-editorial header nav { padding-top: 1.15rem; padding-bottom: 1.15rem; }
+        .home-editorial h1,
+        .home-editorial h2,
+        .home-editorial h3 {
+          font-family: "Playfair Display", "Iowan Old Style", Baskerville, Georgia, serif;
+          font-weight: 500 !important;
+        }
+        .home-editorial h2 {
+          font-size: clamp(2.1rem, 4vw, 3.35rem) !important;
+          line-height: 1.04 !important;
+          letter-spacing: -.045em !important;
+        }
+        .home-editorial section { scroll-margin-top: 100px; }
+        .home-editorial section:not(#home) { position: relative; }
+        .home-editorial section:not(#home) > div { position: relative; }
+        .home-editorial section.py-24 { padding-top: clamp(4.5rem, 8vw, 7.5rem) !important; padding-bottom: clamp(4.5rem, 8vw, 7.5rem) !important; }
+        .home-editorial .rounded-2xl,
+        .home-editorial .rounded-xl,
+        .home-editorial .rounded-lg { border-radius: 2px !important; }
+        .home-editorial .rounded-full { border-radius: 9999px !important; }
+        .home-editorial [class*="border-[#3B82D6]"] { border-color: var(--nexus-line); }
+        .home-editorial .bg-\[\#080D24\] { background-color: rgba(8,13,36,.72); }
+        .home-editorial #about .grid > div:first-child > div:last-child {
+          min-height: 19rem;
+          background-image: radial-gradient(circle at 50% 50%, rgba(59,130,214,.13), transparent 58%), linear-gradient(rgba(59,130,214,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,214,.08) 1px, transparent 1px) !important;
+          background-size: auto, 30px 30px, 30px 30px;
+        }
+        .home-editorial #about .grid > div:first-child > div:last-child svg { width: 7rem; height: 7rem; }
+        .home-editorial #events > div > div:last-child {
+          border-style: solid !important;
+          border-color: var(--nexus-line) !important;
+          background-image: linear-gradient(135deg, rgba(59,130,214,.08), transparent 55%) !important;
+        }
+        .home-editorial #team .group,
+        .home-editorial #gallery > div > div {
+          border-radius: 2px !important;
+          border-color: var(--nexus-line) !important;
+          background: rgba(8,13,36,.62) !important;
+        }
+        .home-editorial #team .group img,
+        .home-editorial #gallery img { filter: saturate(.78); }
+        .home-editorial #team .group:hover img,
+        .home-editorial #gallery img:hover { filter: saturate(1); }
+        .home-editorial #contact > div > div:last-child {
+          border-radius: 2px !important;
+          background: linear-gradient(145deg, rgba(12,20,48,.96), rgba(5,9,31,.94)) !important;
+          box-shadow: 0 28px 80px rgba(0,0,0,.22);
+        }
+        .home-editorial input,
+        .home-editorial textarea {
+          border-radius: 0 !important;
+          border-top: 0 !important;
+          border-left: 0 !important;
+          border-right: 0 !important;
+          background: transparent !important;
+          padding-left: .15rem !important;
+        }
+        .home-editorial footer { border-top: 1px solid var(--nexus-line); }
+        .home-editorial a,
+        .home-editorial button { transition-duration: .25s; }
+        .home-editorial a:focus-visible,
+        .home-editorial button:focus-visible,
+        .home-editorial input:focus-visible,
+        .home-editorial textarea:focus-visible {
+          outline: 2px solid #6F91D8;
+          outline-offset: 4px;
+        }
+        .home-editorial.light-theme header {
+          background: rgba(244,243,239,.92) !important;
+          box-shadow: 0 12px 40px rgba(20,35,60,.06);
+        }
+        .home-editorial.light-theme #contact > div > div:last-child {
+          background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(239,241,246,.98)) !important;
+          box-shadow: 0 28px 80px rgba(20,35,60,.08);
+        }
+        .home-editorial.light-theme #team .group,
+        .home-editorial.light-theme #gallery > div > div,
+        .home-editorial.light-theme #events > div > div:last-child,
+        .home-editorial.light-theme #about .grid > div:first-child > div:last-child {
+          background-color: rgba(255,255,255,.78) !important;
+        }
+        .home-editorial.light-theme input,
+        .home-editorial.light-theme textarea {
+          background: rgba(255,255,255,.72) !important;
+          border-bottom-color: rgba(70,83,106,.35) !important;
+        }
+        .home-editorial.light-theme .photo-grain {
+          border-color: rgba(0,0,31,.82) !important;
+        }
+        @media (max-width: 640px) {
+          .home-editorial #home h1 { font-size: clamp(3.4rem, 15vw, 5rem); }
+          .home-editorial #home .relative.mx-auto.h-\[430px\] { height: 360px; }
+          .home-editorial #home .blueprint { width: 17rem; height: 17rem; }
+          .home-editorial #home .photo-grain { border-width: 5px; }
+        }
       `}</style>
-      <Navbar />
+      <Navbar isLight={isLight} onToggleTheme={() => setIsLight((current) => !current)} />
 
       <main>
         <Hero />
