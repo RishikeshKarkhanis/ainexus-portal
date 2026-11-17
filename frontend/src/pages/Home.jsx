@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { ArrowRight, ArrowUpRight, BrainCircuit, CalendarDays, Camera, Code2, Cpu, Mail, MapPin, Menu, X, Sparkles, Users } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { UserRound, LogOut, Sun, Moon } from "lucide-react";
+import { UserRound, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 import { apiRequest } from "../lib/api";
 
 const faculty = [
@@ -158,13 +158,7 @@ function Navbar({ isLight, onToggleTheme }) {
           ))}
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleTheme}
-          aria-label={isLight ? "Switch to dark theme" : "Switch to light theme"}
-          title={isLight ? "Switch to dark theme" : "Switch to light theme"}
-          className="hidden lg:inline-flex items-center justify-center rounded-full border border-[#3B82D6]/50 p-2.5 text-[#3B82D6] transition hover:bg-[#3B82D6]/10"
-        >
+        <button type="button" onClick={onToggleTheme} aria-label={isLight ? "Switch to dark theme" : "Switch to light theme"} title={isLight ? "Switch to dark theme" : "Switch to light theme"} className="hidden lg:inline-flex items-center justify-center rounded-full border border-[#3B82D6]/50 p-2.5 text-[#3B82D6] transition hover:bg-[#3B82D6]/10">
           {isLight ? <Moon size={18} /> : <Sun size={18} />}
         </button>
 
@@ -190,6 +184,11 @@ function Navbar({ isLight, onToggleTheme }) {
                   <Link to="/profile" onClick={() => setProfileOpen(false)} className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#AEBBD0] transition hover:bg-white/5 hover:text-[#E8E5DF]">
                     <UserRound size={17} /> My Profile
                   </Link>
+                  {user?.isAdmin === true && (
+                    <Link to="/admin-login" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#3B82D6] transition hover:bg-white/5">
+                      <ShieldCheck size={17} /> Admin Settings
+                    </Link>
+                  )}
                   <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#D58C91] transition hover:bg-red-500/10">
                     <LogOut size={17} /> Logout
                   </button>
@@ -200,16 +199,11 @@ function Navbar({ isLight, onToggleTheme }) {
         </div>
 
         <div className="flex items-center gap-3 lg:hidden">
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            aria-label={isLight ? "Switch to dark theme" : "Switch to light theme"}
-            className="rounded-full border border-[#3B82D6]/50 p-2 text-[#3B82D6] transition hover:bg-[#3B82D6]/10"
-          >
+          <button type="button" onClick={onToggleTheme} aria-label={isLight ? "Switch to dark theme" : "Switch to light theme"} className="rounded-full border border-[#3B82D6]/50 p-2 text-[#3B82D6] transition hover:bg-[#3B82D6]/10">
             {isLight ? <Moon size={18} /> : <Sun size={18} />}
           </button>
           <button className="text-[#E8E5DF]" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">
-          {menuOpen ? <X size={25} /> : <Menu size={25} />}
+            {menuOpen ? <X size={25} /> : <Menu size={25} />}
           </button>
         </div>
       </nav>
@@ -235,6 +229,11 @@ function Navbar({ isLight, onToggleTheme }) {
                 <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 text-sm text-[#AEBBD0] hover:text-[#E8E5DF]">
                   <UserRound size={17} /> My Profile
                 </Link>
+                {user?.isAdmin === true && (
+                  <Link to="/admin-login" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 text-sm text-[#3B82D6]">
+                    <ShieldCheck size={17} /> Admin Settings
+                  </Link>
+                )}
                 <button onClick={handleLogout} className="flex items-center gap-3 text-left text-sm text-[#D58C91]">
                   <LogOut size={17} /> Logout
                 </button>
