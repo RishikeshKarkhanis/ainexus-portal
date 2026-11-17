@@ -141,7 +141,9 @@ function Navbar() {
     <header className="sticky top-0 z-50 border-b border-[#3B82D6]/30 bg-[#00001F]/95 backdrop-blur-lg">
       <nav className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-6 md:flex-row md:items-center md:justify-between lg:px-12">
         <a href="#home" className="flex items-center gap-4">
-          <span className="flex h-10 w-10 items-center justify-center text-3xl leading-none text-[#3B82D6]">✳</span>
+          <span className="flex h-10 w-10 items-center justify-center text-3xl leading-none text-[#3B82D6]">
+            <img src="/icons/favicon.ico" alt="AI Nexus Logo" className="h-8 w-8 object-cover" />
+          </span>
           <span className="flex flex-col">
             <span className="text-xl tracking-[0.22em] text-[#E8E5DF]">AI NEXUS</span>
             <span className="mt-1 text-[10px] tracking-[0.28em] text-[#AEBBD0]">ACROPOLIS INSTITUTE</span>
