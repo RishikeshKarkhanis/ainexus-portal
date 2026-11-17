@@ -18,14 +18,14 @@ export async function loginUser(credentials) {
   // Save authentication details
   localStorage.setItem("authToken", data.token);
 
-  localStorage.setItem(
-    "authUser",
-    JSON.stringify({
-      userId: data.userId,
-      name: data.name,
-      email: data.email,
-    }),
-  );
+  const userData = {
+    userId: data.userId,
+    name: data.name,
+    email: data.email,
+    isAdmin: data.isAdmin === true,
+  };
+
+  localStorage.setItem("authUser", JSON.stringify(userData));
 
   return data;
 }
@@ -38,8 +38,13 @@ export function logoutUser() {
 
 // Get currently logged-in user
 export function getCurrentUser() {
-  const user = localStorage.getItem("authUser");
-  return user ? JSON.parse(user) : null;
+  try {
+    const user = localStorage.getItem("authUser");
+    return user ? JSON.parse(user) : null;
+  } catch {
+    localStorage.removeItem("authUser");
+    return null;
+  }
 }
 
 // Check whether a user is logged in
