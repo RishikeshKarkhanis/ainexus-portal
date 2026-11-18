@@ -65,6 +65,7 @@ public class PaymentService {
     private final TicketRepository ticketRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final HallTicketService hallTicketService;
 
     @Value("${razorpay.key.secret}")
     private String razorpayKeySecret;
@@ -79,7 +80,8 @@ public class PaymentService {
             TeamMemberRepository teamMemberRepository,
             TicketRepository ticketRepository,
             UserRepository userRepository,
-            EmailService emailService
+            EmailService emailService,
+            HallTicketService hallTicketService
     ) {
         this.razorpayClient = razorpayClient;
         this.eventRepository = eventRepository;
@@ -91,6 +93,7 @@ public class PaymentService {
         this.ticketRepository = ticketRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.hallTicketService = hallTicketService;
     }
 
     // ==========================================
@@ -244,8 +247,7 @@ public class PaymentService {
             throw new RuntimeException("Invalid payment signature");
         }
 
-        // Load metadata before idempotency check so that
-        // the caller's identity can be checked in both cases.
+        // Load metadata before idempotency check.
         PaymentMetadata metadata = paymentMetadataRepository
                 .findByPaymentId(payment.getPaymentId())
                 .orElseThrow(() -> new RuntimeException(
@@ -371,7 +373,7 @@ public class PaymentService {
 
         team = teamRepository.save(team);
 
-        // Collect email details until the transaction commits.
+        // Collect email details until transaction commits.
         List<RegistrationEmail> registrationEmails = new ArrayList<>();
 
         // ==========================================
@@ -443,7 +445,7 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        // Emails are sent only after the database transaction commits.
+        // Send individual PDF hall tickets after DB commit.
         scheduleRegistrationEmails(
                 registrationEmails,
                 event,
@@ -513,7 +515,7 @@ public class PaymentService {
     }
 
     // ==========================================
-    // 9. SEND REGISTRATION EMAILS AFTER COMMIT
+    // 9. SEND HALL TICKET EMAILS AFTER COMMIT
     // ==========================================
 
     private void scheduleRegistrationEmails(
@@ -537,20 +539,30 @@ public class PaymentService {
                         for (RegistrationEmail recipient : recipients) {
 
                             try {
-                                emailService.sendRegistrationConfirmation(
+
+                                // Generate an individual PDF using
+                                // this participant's unique QR token.
+                                byte[] pdfBytes =
+                                        hallTicketService.generateHallTicket(
+                                                recipient.ticketCode()
+                                        );
+
+                                // Send the PDF as an email attachment.
+                                emailService.sendRegistrationConfirmationWithAttachment(
                                         recipient.name(),
                                         recipient.email(),
                                         event.getEventName(),
                                         event.getEventDate().toString(),
                                         teamName,
-                                        recipient.ticketCode()
+                                        recipient.ticketCode(),
+                                        pdfBytes
                                 );
 
                             } catch (Exception exception) {
 
                                 LOGGER.log(
                                         Level.SEVERE,
-                                        "Failed to send registration email to "
+                                        "Failed to generate/send hall ticket to "
                                                 + recipient.email(),
                                         exception
                                 );
