@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { CalendarDays, Wallet, ShieldCheck, ClipboardCheck, LogOut, Menu, X } from "lucide-react";
 
+import AttendanceManager from "../components/features/AttendanceManager";
 import EventManager from "../components/features/EventManager";
 
 const menuItems = [
@@ -47,12 +48,7 @@ function AdminPanel() {
         );
 
       case "attendance":
-        return (
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Attendance</h2>
-            <p className="mt-1 text-sm text-gray-500">View and manage event attendance.</p>
-          </div>
-        );
+        return <AttendanceManager />;
 
       default:
         return null;
