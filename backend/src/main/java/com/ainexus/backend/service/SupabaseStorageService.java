@@ -31,6 +31,7 @@ public class SupabaseStorageService {
 
     private final RestClient restClient = RestClient.create();
 
+
     public String uploadImage(String filePath, byte[] fileBytes, String contentType) {
 
         String encodedPath = UriUtils.encodePath(
