@@ -233,20 +233,21 @@ public class EventService {
 
         String thumbnailPath = event.getThumbnailPath();
 
-        // 1. Delete attendance records
-//        jdbcTemplate.update("""
-//                DELETE FROM attendance
-//                WHERE event_id = ?
-//                   OR ticket_id IN (
-//                       SELECT tk.ticket_id
-//                       FROM tickets tk
-//                       JOIN team_members tm
-//                         ON tm.team_member_id = tk.team_member_id
-//                       JOIN teams t
-//                         ON t.team_id = tm.team_id
-//                       WHERE t.event_id = ?
-//                   )
-//                """, eventId, eventId);
+
+        // 1. Delete attendance records before deleting tickets
+        jdbcTemplate.update("""
+                DELETE FROM attendance
+                WHERE event_id = ?
+                   OR ticket_id IN (
+                       SELECT tk.ticket_id
+                       FROM tickets tk
+                       JOIN team_members tm
+                         ON tm.team_member_id = tk.team_member_id
+                       JOIN teams t
+                         ON t.team_id = tm.team_id
+                       WHERE t.event_id = ?
+                   )
+                """, eventId, eventId);
 
         // 2. Delete tickets
         jdbcTemplate.update("""
@@ -259,6 +260,7 @@ public class EventService {
                     WHERE t.event_id = ?
                 )
                 """, eventId);
+
 
         // 3. Delete team members
         jdbcTemplate.update("""

@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { CalendarDays, Wallet, ShieldCheck, ClipboardCheck, LogOut, Menu, X } from "lucide-react";
+import { CalendarDays, Wallet, ShieldCheck, ClipboardCheck, ClipboardList, LogOut, Menu, X } from "lucide-react";
 
 import AttendanceManager from "../components/features/AttendanceManager";
 import EventManager from "../components/features/EventManager";
+import RegistrationsManager from "../components/features/RegistrationsManager";
 
 const menuItems = [
   { id: "events", label: "Manage Events", icon: CalendarDays },
+  { id: "registrations", label: "Registrations", icon: ClipboardList },
   { id: "funds", label: "Manage Funds", icon: Wallet },
   { id: "admins", label: "Manage Admins", icon: ShieldCheck },
   { id: "attendance", label: "Attendance", icon: ClipboardCheck },
@@ -30,6 +32,9 @@ function AdminPanel() {
     switch (activeSection) {
       case "events":
         return <EventManager />;
+
+      case "registrations":
+        return <RegistrationsManager />;
 
       case "funds":
         return (
