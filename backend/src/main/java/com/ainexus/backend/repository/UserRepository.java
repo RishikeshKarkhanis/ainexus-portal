@@ -1,12 +1,13 @@
-
 package com.ainexus.backend.repository;
 
 import com.ainexus.backend.entity.User;
 import com.ainexus.backend.dto.response.UserSearchResponse;
+import com.ainexus.backend.dto.response.AdminUserResponse;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -55,5 +56,34 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             @Param("eventId") UUID eventId,
             @Param("currentUserId") UUID currentUserId,
             @Param("query") String query
+    );
+
+    // Fetch current administrators without exposing sensitive fields
+    @Query("""
+        SELECT new com.ainexus.backend.dto.response.AdminUserResponse(
+            u.userId, u.name, u.email
+        )
+        FROM User u
+        WHERE u.isAdmin = true
+        ORDER BY u.name
+    """)
+    List<AdminUserResponse> findAdminUsers();
+
+    // Search existing non-admin users by name or email
+    @Query("""
+        SELECT new com.ainexus.backend.dto.response.AdminUserResponse(
+            u.userId, u.name, u.email
+        )
+        FROM User u
+        WHERE u.isAdmin = false
+          AND (
+              LOWER(u.name) LIKE LOWER(CONCAT('%', :query, '%'))
+              OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+          )
+        ORDER BY u.name
+    """)
+    List<AdminUserResponse> searchNonAdminUsers(
+            @Param("query") String query,
+            Pageable pageable
     );
 }

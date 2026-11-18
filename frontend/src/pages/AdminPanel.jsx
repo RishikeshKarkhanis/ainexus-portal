@@ -5,11 +5,11 @@ import { CalendarDays, Wallet, ShieldCheck, ClipboardCheck, ClipboardList, LogOu
 import AttendanceManager from "../components/features/AttendanceManager";
 import EventManager from "../components/features/EventManager";
 import RegistrationsManager from "../components/features/RegistrationsManager";
+import AdminManager from "../components/features/AdminManager";
 
 const menuItems = [
   { id: "events", label: "Manage Events", icon: CalendarDays },
   { id: "registrations", label: "Registrations", icon: ClipboardList },
-  { id: "funds", label: "Manage Funds", icon: Wallet },
   { id: "admins", label: "Manage Admins", icon: ShieldCheck },
   { id: "attendance", label: "Attendance", icon: ClipboardCheck },
 ];
@@ -36,21 +36,8 @@ function AdminPanel() {
       case "registrations":
         return <RegistrationsManager />;
 
-      case "funds":
-        return (
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Manage Funds</h2>
-            <p className="mt-1 text-sm text-gray-500">Track and manage club finances.</p>
-          </div>
-        );
-
       case "admins":
-        return (
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Manage Admins</h2>
-            <p className="mt-1 text-sm text-gray-500">Manage administrator access.</p>
-          </div>
-        );
+        return <AdminManager />;
 
       case "attendance":
         return <AttendanceManager />;
