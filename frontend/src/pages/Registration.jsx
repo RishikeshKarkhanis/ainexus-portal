@@ -243,9 +243,9 @@ export default function Registration() {
           )}
 
           <div>
-            <Link to="/events" className="mt-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white">
+            <Link to="/" className="mt-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white">
               <ArrowLeft size={16} />
-              Back to Events
+              Back to Home
             </Link>
           </div>
         </div>
@@ -272,9 +272,9 @@ export default function Registration() {
   return (
     <main className="min-h-screen bg-[#090a0f] px-5 py-12 text-white sm:px-8">
       <div className="mx-auto max-w-3xl space-y-8">
-        <Link to="/events" className="inline-flex items-center gap-2 text-sm text-gray-400 transition hover:text-white">
+        <Link to="/" className="inline-flex items-center gap-2 text-sm text-gray-400 transition hover:text-white">
           <ArrowLeft size={17} />
-          Back to Events
+          Back to Home
         </Link>
 
         <header>
