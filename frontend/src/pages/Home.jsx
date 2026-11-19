@@ -9,12 +9,12 @@ const faculty = [
   {
     name: "Dr. Namrata Tapaswi",
     role: "Head of Department",
-    image: "https://i.pravatar.cc/400?img=47",
+    image: "/faculties/drnamratahod.png",
   },
   {
     name: "Prof. Jaya Dubey",
     role: "Club Coordinator",
-    image: "https://i.pravatar.cc/400?img=44",
+    image: "/faculties/profjayadubey.png",
   },
 ];
 
@@ -22,78 +22,78 @@ const studentTeam = [
   {
     name: "Devansh Burman",
     role: "Chairperson",
-    image: "https://i.pravatar.cc/400?img=12",
+    image: "/team/devansh.jpeg",
   },
   {
     name: "Soumya Soni",
     role: "Vice Chairperson",
-    image: "https://i.pravatar.cc/400?img=45",
+    image: "/team/soumya.jpeg",
   },
   {
     name: "Kush Yadav",
     role: "Secretary",
-    image: "https://i.pravatar.cc/400?img=13",
+    image: "/team/kush.jpeg",
   },
   {
     name: "Nandani Chandoriya",
     role: "Treasurer",
-    image: "https://i.pravatar.cc/400?img=48",
+    image: "/team/nandani.jpeg",
   },
 
   {
     name: "Rishikesh Karkhanis",
     role: "Technical Head",
-    image: "https://i.pravatar.cc/400?img=11",
+    image: "/team/hrishikesh.jpeg",
   },
   {
     name: "Siddh Agrawal",
     role: "Technical Coordinator",
-    image: "https://i.pravatar.cc/400?img=14",
+    image: "/team/siddh.jpeg",
   },
   {
     name: "Yuvraj Singh Jadhav",
     role: "Social & PR Head",
-    image: "https://i.pravatar.cc/400?img=15",
+    image: "/team/yuvraj.jpeg",
   },
   {
     name: "Sachin Verma",
     role: "Designing Head",
-    image: "https://i.pravatar.cc/400?img=16",
+    image: "/team/sachin.jpeg",
   },
   {
     name: "Riya Khandelwal",
     role: "Designing Coordinator",
-    image: "https://i.pravatar.cc/400?img=49",
+    image: "/team/riyak.jpeg",
   },
   {
     name: "Aditi Purohit",
     role: "Documentation Head",
-    image: "https://i.pravatar.cc/400?img=50",
+    image: "/team/aditi.jpeg",
   },
   {
     name: "Varad Dubey",
     role: "Master of Ceremonies / Anchoring Coordinator",
-    image: "https://i.pravatar.cc/400?img=17",
+    image: "/team/varad.jpeg",
   },
   {
     name: "Riya Dixit",
     role: "Master of Ceremonies / Anchoring Coordinator",
-    image: "https://i.pravatar.cc/400?img=51",
+    image: "/team/riyad.jpeg",
   },
   {
     name: "Vani Chhatlore",
     role: "Master of Ceremonies / Anchoring Coordinator",
-    image: "https://i.pravatar.cc/400?img=52",
+    image: "/team/vani.jpeg",
   },
   {
     name: "Jay Soni",
     role: "Behind the Camera & Photography",
-    image: "https://i.pravatar.cc/400?img=18",
+    image: "/team/jay.jpeg",
   },
   {
     name: "Aman Sahu",
     role: "Behind the Camera & Photography",
-    image: "https://i.pravatar.cc/400?img=19",
+    image: "/team/aman.jpeg",
   },
 ];
 
