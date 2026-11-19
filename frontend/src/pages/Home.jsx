@@ -58,12 +58,12 @@ const studentTeam = [
   {
     name: "Sachin Verma",
     role: "Designing Head",
-    image: "/team/sachin.jpeg",
+    image: "/team/sachin.png",
   },
   {
     name: "Riya Khandelwal",
     role: "Designing Coordinator",
-    image: "/team/riyak.jpeg",
+    image: "/team/riyak.png",
   },
   {
     name: "Aditi Purohit",
@@ -73,22 +73,22 @@ const studentTeam = [
   {
     name: "Varad Dubey",
     role: "Master of Ceremonies / Anchoring Coordinator",
-    image: "/team/varad.jpeg",
+    image: "/team/varad.png",
   },
   {
     name: "Riya Dixit",
     role: "Master of Ceremonies / Anchoring Coordinator",
-    image: "/team/riyad.jpeg",
+    image: "/team/riyad.png",
   },
   {
     name: "Vani Chhatlore",
     role: "Master of Ceremonies / Anchoring Coordinator",
-    image: "/team/vani.jpeg",
+    image: "/team/vani.png",
   },
   {
     name: "Jay Soni",
     role: "Behind the Camera & Photography",
-    image: "/team/jay.jpeg",
+    image: "/team/jay.png",
   },
   {
     name: "Aman Sahu",
