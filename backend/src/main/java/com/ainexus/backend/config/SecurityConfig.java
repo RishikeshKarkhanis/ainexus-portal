@@ -62,6 +62,10 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
 
+                        // Public event browsing
+                        .requestMatchers(HttpMethod.GET, "/api/events/**")
+                        .permitAll()
+
                         // Admin authentication endpoints
                         // Require a normal authenticated user
                         .requestMatchers("/api/admin/auth/**")

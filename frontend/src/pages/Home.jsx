@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router";
-import { ArrowRight, ArrowUpRight, BrainCircuit, CalendarDays, Camera, Code2, Cpu, Mail, MapPin, Menu, X, Sparkles, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { ArrowRight, ArrowUpRight, BrainCircuit, CalendarDays, Camera, Code2, Cpu, Mail, MapPin, Menu, X, Sparkles, Users, ChevronLeft, ChevronRight, IndianRupee, LockKeyhole } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { UserRound, LogOut, Sun, Moon, ShieldCheck } from "lucide-react";
 import { apiRequest } from "../lib/api";
@@ -407,24 +407,114 @@ function WhatWeDo() {
   );
 }
 
-function Events() {
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+function getThumbnailUrl(path) {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${SUPABASE_URL}/storage/v1/object/public/ainexus-assets/${path}`;
+}
+
+function formatEventDate(date) {
+  if (!date) return "Date to be announced";
+
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function Events({ events, loading, error, onRegister }) {
+  const scrollEvents = (direction) => {
+    const container = document.getElementById("event-carousel");
+    if (!container) return;
+
+    container.scrollBy({
+      left: direction * 340,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <section id="events" className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
       <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
         <SectionHeading eyebrow="What's Happening" title="Events & Experiences." description="Discover workshops, hackathons and opportunities to learn, compete and collaborate." />
 
-        <Link to="/events" className="mb-12 inline-flex w-fit items-center gap-2 text-sm font-semibold text-[#3B82D6] hover:text-[#6F91D8]">
-          View all events <ArrowUpRight size={17} />
-        </Link>
+        {!loading && events.length > 0 && (
+          <div className="mb-12 hidden gap-2 sm:flex">
+            <button type="button" onClick={() => scrollEvents(-1)} aria-label="Previous events" className="border border-[#3B82D6]/40 p-3 text-[#AEBBD0] transition hover:bg-[#3B82D6]/10">
+              <ChevronLeft size={20} />
+            </button>
+            <button type="button" onClick={() => scrollEvents(1)} aria-label="Next events" className="border border-[#3B82D6]/40 p-3 text-[#AEBBD0] transition hover:bg-[#3B82D6]/10">
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="rounded-2xl border border-dashed border-[#E8E5DF]/30 bg-[#080D24] px-6 py-16 text-center">
-        <CalendarDays size={38} className="mx-auto text-[#3B82D6]" />
+      {loading ? (
+        <div className="py-20 text-center text-sm text-[#AEBBD0]">Loading upcoming events...</div>
+      ) : error ? (
+        <div className="border border-red-500/20 bg-[#080D24] px-6 py-12 text-center">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
+      ) : events.length === 0 ? (
+        <div className="border border-[#3B82D6]/20 bg-[#080D24] px-6 py-16 text-center">
+          <CalendarDays size={38} className="mx-auto text-[#3B82D6]" />
+          <h3 className="mt-6 text-xl font-semibold text-[#E8E5DF]">No upcoming events right now.</h3>
+          <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[#8B929F]">Stay connected with AI Nexus for upcoming workshops, competitions and community activities.</p>
+        </div>
+      ) : (
+        <div id="event-carousel" className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-5" style={{ scrollbarWidth: "thin" }}>
+          {events.map((event) => {
+            const thumbnail = getThumbnailUrl(event.thumbnailPath);
+            const registrationOpen = event.registrationStatus === "OPEN";
 
-        <h3 className="mt-6 text-xl font-semibold text-[#E8E5DF]">Upcoming events will appear here.</h3>
+            return (
+              <article key={event.eventId} className="flex w-[280px] shrink-0 snap-start flex-col overflow-hidden border border-[#3B82D6]/20 bg-[#080D24] sm:w-[320px]">
+                <div className="aspect-video overflow-hidden bg-[#18213A]">
+                  {thumbnail ? (
+                    <img src={thumbnail} alt={event.eventName} loading="lazy" className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <CalendarDays size={48} className="text-[#3B82D6]/50" />
+                    </div>
+                  )}
+                </div>
 
-        <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[#8B929F]">Stay connected with AI Nexus for upcoming events, workshops, competitions and community activities.</p>
-      </div>
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-[#3B82D6]">{formatEventDate(event.eventDate)}</span>
+                    <span className={`text-[10px] font-semibold uppercase tracking-wider ${registrationOpen ? "text-green-400" : "text-red-400"}`}>{event.registrationStatus || "STATUS UNAVAILABLE"}</span>
+                  </div>
+
+                  <h3 className="mt-4 line-clamp-2 min-h-[3.5rem] text-xl font-semibold text-[#E8E5DF]">{event.eventName}</h3>
+                  <p className="mt-3 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-[#AEBBD0]">{event.description || "More details coming soon."}</p>
+
+                  <div className="mt-5 flex items-center justify-between border-t border-[#3B82D6]/20 pt-4">
+                    <span className="flex items-center gap-1 text-sm text-[#AEBBD0]">
+                      {event.registrationFee > 0 ? (
+                        <>
+                          <IndianRupee size={15} />
+                          {event.registrationFee}
+                        </>
+                      ) : (
+                        "Free"
+                      )}
+                    </span>
+                    <span className="text-xs text-[#8B929F]">{event.collegeOnly ? "Acropolis Only" : "Open to All"}</span>
+                  </div>
+
+                  <button type="button" disabled={!registrationOpen} onClick={() => onRegister(event.eventId)} className="mt-6 w-full bg-[#1E4F9A] px-5 py-3.5 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400">
+                    {registrationOpen ? "Register Now" : "Registration Closed"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
@@ -606,6 +696,48 @@ function Footer() {
 
 export default function Home() {
   const [isLight, setIsLight] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState("");
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState(null);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchEvents = async () => {
+      try {
+        setEventsLoading(true);
+        setEventsError("");
+        const data = await apiRequest("/api/events/upcoming");
+        if (isMounted) setEvents(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Unable to fetch upcoming events:", error);
+        if (isMounted) {
+          setEventsError("Unable to load upcoming events. Please try again later.");
+        }
+      } finally {
+        if (isMounted) setEventsLoading(false);
+      }
+    };
+
+    fetchEvents();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleEventRegister = (eventId) => {
+    if (!isAuthenticated) {
+      setSelectedEventId(eventId);
+      setLoginModalOpen(true);
+      return;
+    }
+
+    navigate(`/events/${eventId}/register`);
+  };
 
   return (
     <div className={`home-editorial starfield min-h-screen font-editorial ${isLight ? "light-theme" : "bg-[#00001F] text-[#E8E5DF]"}`}>
@@ -795,13 +927,40 @@ export default function Home() {
         <Highlights />
         <About />
         <WhatWeDo />
-        <Events />
+        <Events events={events} loading={eventsLoading} error={eventsError} onRegister={handleEventRegister} />
         <Team />
         <Gallery />
         <Contact />
       </main>
 
       <Footer />
+
+      {loginModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-5 backdrop-blur-sm" onClick={() => setLoginModalOpen(false)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="login-modal-title" onClick={(event) => event.stopPropagation()} className="relative w-full max-w-md border border-[#3B82D6]/30 bg-[#080D24] p-8 text-center shadow-2xl">
+            <button type="button" onClick={() => setLoginModalOpen(false)} aria-label="Close login dialog" className="absolute right-4 top-4 text-[#AEBBD0] hover:text-white">
+              <X size={20} />
+            </button>
+
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#3B82D6]/10">
+              <LockKeyhole size={28} className="text-[#3B82D6]" />
+            </div>
+
+            <h2 id="login-modal-title" className="mt-6 text-2xl font-semibold text-[#E8E5DF]">
+              Login Required
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-[#AEBBD0]">Please log in to your AI Nexus account before registering for this event.</p>
+
+            <button type="button" onClick={() => navigate(`/auth?redirect=${encodeURIComponent(`/events/${selectedEventId}/register`)}`)} className="mt-7 w-full bg-[#1E4F9A] px-6 py-4 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6]">
+              Log In to Continue <ArrowUpRight className="ml-2 inline" size={17} />
+            </button>
+
+            <button type="button" onClick={() => setLoginModalOpen(false)} className="mt-4 text-sm text-[#8B929F] transition hover:text-[#E8E5DF]">
+              Continue Browsing
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
