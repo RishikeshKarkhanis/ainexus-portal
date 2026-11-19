@@ -145,8 +145,8 @@ function Navbar({ isLight, onToggleTheme }) {
             <img src="/icons/favicon.ico" alt="AI Nexus Logo" className="h-8 w-8 object-cover" />
           </span>
           <span className="flex flex-col">
-            <span className="text-xl tracking-[0.22em] text-[#E8E5DF]">AI NEXUS</span>
-            <span className="mt-1 text-[10px] tracking-[0.28em] text-[#AEBBD0]">ACROPOLIS INSTITUTE</span>
+            <span className="text-xl tracking-[0.22em] text-[#E8E5DF]">AI NEXUS CLUB</span>
+            <span className="mt-1 text-[5px] tracking-[0.28em] text-[#AEBBD0]">ACROPOLIS INSTITUTE OF TECHNOLOGY & RESEARCH, INDORE</span>
           </span>
         </a>
 
