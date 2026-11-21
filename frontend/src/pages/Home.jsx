@@ -463,7 +463,7 @@ function formatEventDate(date) {
   });
 }
 
-function Events({ events, loading, error, onRegister }) {
+function Events({ events, loading, error, onRegister, isAcropolisStudent, isAuthenticated }) {
   const scrollEvents = (direction) => {
     const container = document.getElementById("event-carousel");
     if (!container) return;
@@ -508,6 +508,7 @@ function Events({ events, loading, error, onRegister }) {
           {events.map((event) => {
             const thumbnail = getThumbnailUrl(event.thumbnailPath);
             const registrationOpen = event.registrationStatus === "OPEN";
+            const eligibilityBlocked = isAuthenticated && event.collegeOnly && !isAcropolisStudent;
 
             return (
               <article key={event.eventId} className="flex w-[280px] shrink-0 snap-start flex-col overflow-hidden border border-[#3B82D6]/20 bg-[#080D24] sm:w-[320px]">
@@ -544,8 +545,10 @@ function Events({ events, loading, error, onRegister }) {
                     <span className="text-xs text-[#8B929F]">{event.collegeOnly ? "Acropolis Only" : "Open to All"}</span>
                   </div>
 
-                  <button type="button" disabled={!registrationOpen} onClick={() => onRegister(event.eventId)} className="mt-6 w-full bg-[#1E4F9A] px-5 py-3.5 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400">
-                    {registrationOpen ? "Register Now" : "Registration Closed"}
+                  {eligibilityBlocked && <p className="mt-5 border-l-2 border-yellow-400/70 bg-yellow-400/5 px-3 py-2 text-xs leading-5 text-yellow-300">This event is exclusively for Acropolis students. Use an @acropolis.in account to register.</p>}
+
+                  <button type="button" disabled={!registrationOpen || eligibilityBlocked} onClick={() => onRegister(event.eventId)} className="mt-6 w-full bg-[#1E4F9A] px-5 py-3.5 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400">
+                    {eligibilityBlocked ? "Acropolis Students Only" : registrationOpen ? "Register Now" : "Registration Closed"}
                   </button>
                 </div>
               </article>
@@ -785,7 +788,9 @@ export default function Home() {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState(null);
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  const isAcropolisStudent = user?.email?.trim().toLowerCase().endsWith("@acropolis.in") ?? false;
 
   useEffect(() => {
     let isMounted = true;
@@ -1008,7 +1013,7 @@ export default function Home() {
       <main>
         <Hero />
         <About />
-        <Events events={events} loading={eventsLoading} error={eventsError} onRegister={handleEventRegister} />
+        <Events events={events} loading={eventsLoading} error={eventsError} onRegister={handleEventRegister} isAuthenticated={isAuthenticated} isAcropolisStudent={isAcropolisStudent} />
         <Team />
         <Gallery />
         <Contact />
