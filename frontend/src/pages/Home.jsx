@@ -139,7 +139,7 @@ function Navbar({ isLight, onToggleTheme }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#3B82D6]/30 bg-[#00001F]/95 backdrop-blur-lg">
-      <nav className="mx-auto flex max-w-7xl flex-col gap-5 px-6 py-6 md:flex-row md:items-center md:justify-between lg:px-12">
+      <nav className="mx-auto flex w-full max-w-7xl flex-row items-center justify-between gap-3 px-6 py-6 lg:px-12">
         <a href="#home" className="flex items-center gap-4">
           <span className="flex h-10 w-10 items-center justify-center text-3xl leading-none text-[#3B82D6]">
             <img src="/icons/favicon.ico" alt="AI Nexus Logo" className="h-8 w-8 object-cover" />

@@ -1,5 +1,11 @@
+# macOS
 **/.DS_Store
-frontend/.env
-backend/target/
-backend/src/main/resources/application.properties
-backend/backend-java.zip
+
+# Frontend
+/frontend/.env
+
+# Backend
+/backend/target/
+/backend/.env
+/backend/.env.*
+!/backend/.env.example

@@ -171,10 +171,6 @@ export default function Profile() {
                   <h4 className="mt-4 font-semibold">No registrations yet</h4>
 
                   <p className="mt-2 text-sm text-slate-400">You haven't registered for any events yet.</p>
-
-                  <Link to="/events" className="mt-5 inline-block rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold transition hover:bg-blue-500">
-                    Explore Events
-                  </Link>
                 </div>
               ) : (
                 /* Registered Events */
