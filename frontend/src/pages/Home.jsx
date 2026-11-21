@@ -215,7 +215,7 @@ const lifeAtNexusEvents = [
   },
 ];
 
-const galleryImages = ["https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900", "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=900", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=900", "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=900"];
+const galleryImages = ["index/logo.jpeg", "index/acropolis.jpeg", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=900", "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=900"];
 
 const navigation = [
   { label: "Home", href: "#home" },
@@ -405,7 +405,7 @@ function Hero() {
           </div>
 
           <div className="photo-grain absolute bottom-4 right-1 z-20 flex h-48 w-[70%] rotate-3 items-end overflow-hidden border-[7px] border-[#E8E5DF]/90 bg-[#080D24] shadow-2xl sm:right-0">
-            <img src={galleryImages[2]} alt="Students collaborating on technology" className="absolute inset-0 h-full w-full object-cover opacity-60 grayscale" />
+            <img src={galleryImages[1]} alt="Students collaborating on technology" className="absolute inset-0 h-full w-full object-cover opacity-60 grayscale" />
             <div className="relative z-10 p-5">
               <p className="text-[10px] tracking-[0.25em] text-[#E8E5DF]/80">WORKSHOPS · BUILDS · PEOPLE</p>
               <p className="mt-1 text-2xl text-[#E8E5DF]">Built together.</p>
@@ -414,28 +414,6 @@ function Hero() {
 
           <span className="absolute bottom-0 left-8 z-30 text-xs tracking-[0.25em] text-[#3B82D6]">FIG. 01 — THE COMMUNITY</span>
         </div>
-      </div>
-    </section>
-  );
-}
-
-function Highlights() {
-  const highlights = [
-    { value: "AI", label: "Artificial Intelligence", color: "border-[#3B82D6]" },
-    { value: "ML", label: "Machine Learning", color: "border-[#6F91D8]" },
-    { value: "DEV", label: "Development", color: "border-[#1E4F9A]" },
-    { value: "INNOVATE", label: "Ideas into Impact", color: "border-[#6F91D8]" },
-  ];
-
-  return (
-    <section className="border-y border-[#3B82D6]/20 bg-[#080D24] py-10">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-6 md:grid-cols-4 lg:px-8">
-        {highlights.map((item) => (
-          <div key={item.value} className={`rounded-xl border border-[#3B82D6]/20 border-t-2 ${item.color} bg-[#080D24] px-5 py-6`}>
-            <h3 className="text-3xl font-bold text-[#E8E5DF]">{item.value}</h3>
-            <p className="mt-2 text-xs font-medium uppercase tracking-wider text-[#8B929F]">{item.label}</p>
-          </div>
-        ))}
       </div>
     </section>
   );
@@ -1076,7 +1054,6 @@ export default function Home() {
 
       <main>
         <Hero />
-        <Highlights />
         <About />
         <WhatWeDo />
         <Events events={events} loading={eventsLoading} error={eventsError} onRegister={handleEventRegister} />
