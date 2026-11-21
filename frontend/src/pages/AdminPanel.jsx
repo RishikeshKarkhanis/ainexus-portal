@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { CalendarDays, Wallet, ShieldCheck, ClipboardCheck, ClipboardList, LogOut, Menu, X } from "lucide-react";
+import { CalendarDays, ShieldCheck, ClipboardCheck, ClipboardList, FileSpreadsheet, LogOut, Menu, X } from "lucide-react";
 
 import AttendanceManager from "../components/features/AttendanceManager";
+import Attendance from "../components/features/Attendance";
 import EventManager from "../components/features/EventManager";
 import RegistrationsManager from "../components/features/RegistrationsManager";
 import AdminManager from "../components/features/AdminManager";
@@ -11,7 +12,8 @@ const menuItems = [
   { id: "events", label: "Manage Events", icon: CalendarDays },
   { id: "registrations", label: "Registrations", icon: ClipboardList },
   { id: "admins", label: "Manage Admins", icon: ShieldCheck },
-  { id: "attendance", label: "Attendance", icon: ClipboardCheck },
+  { id: "attendance", label: "Mark Attendance", icon: ClipboardCheck },
+  { id: "attendance-records", label: "Attendance Records", icon: FileSpreadsheet },
 ];
 
 function AdminPanel() {
@@ -42,6 +44,9 @@ function AdminPanel() {
       case "attendance":
         return <AttendanceManager />;
 
+      case "attendance-records":
+        return <Attendance />;
+
       default:
         return null;
     }
@@ -64,7 +69,7 @@ function AdminPanel() {
             <p className="mt-0.5 text-xs text-gray-500">Management Portal</p>
           </div>
 
-          <button className="text-gray-500 md:hidden" onClick={() => setSidebarOpen(false)}>
+          <button type="button" aria-label="Close sidebar" className="text-gray-500 md:hidden" onClick={() => setSidebarOpen(false)}>
             <X size={20} />
           </button>
         </div>
@@ -80,6 +85,7 @@ function AdminPanel() {
               return (
                 <button
                   key={item.id}
+                  type="button"
                   onClick={() => {
                     setActiveSection(item.id);
                     setSidebarOpen(false);
@@ -94,7 +100,7 @@ function AdminPanel() {
         </div>
 
         <div className="border-t border-gray-100 p-4">
-          <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm text-red-600 transition hover:bg-red-50">
+          <button type="button" onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm text-red-600 transition hover:bg-red-50">
             <LogOut size={18} />
             Logout
           </button>
@@ -105,7 +111,7 @@ function AdminPanel() {
       <main className="min-w-0 flex-1">
         <header className="flex h-20 items-center justify-between border-b border-gray-200 bg-white px-5 sm:px-8">
           <div className="flex items-center gap-3">
-            <button className="text-gray-600 md:hidden" onClick={() => setSidebarOpen(true)}>
+            <button type="button" aria-label="Open sidebar" className="text-gray-600 md:hidden" onClick={() => setSidebarOpen(true)}>
               <Menu size={22} />
             </button>
 

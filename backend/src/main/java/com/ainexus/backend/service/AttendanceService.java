@@ -1,7 +1,7 @@
-
 package com.ainexus.backend.service;
 
 import com.ainexus.backend.dto.request.AttendanceScanRequest;
+import com.ainexus.backend.dto.response.AttendanceRecordResponse;
 import com.ainexus.backend.dto.response.AttendanceScanResponse;
 
 import com.ainexus.backend.entity.Attendance;
@@ -11,6 +11,7 @@ import com.ainexus.backend.entity.TeamMember;
 import com.ainexus.backend.entity.Ticket;
 import com.ainexus.backend.entity.User;
 
+import com.ainexus.backend.repository.AttendanceRecordProjection;
 import com.ainexus.backend.repository.AttendanceRepository;
 import com.ainexus.backend.repository.EventRepository;
 import com.ainexus.backend.repository.TeamMemberRepository;
@@ -24,6 +25,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -146,6 +148,47 @@ public class AttendanceService {
                 team.getTeamName(),
                 event.getEventName(),
                 attendance.getCheckedInAt()
+        );
+    }
+
+    // ==========================================
+    // FETCH ATTENDANCE RECORDS FOR ADMIN VIEW
+    // ==========================================
+
+    @Transactional(readOnly = true)
+    public List<AttendanceRecordResponse> getAttendanceRecords(
+            String adminEmail
+    ) {
+
+        User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Admin account not found"
+                ));
+
+        if (!admin.isAdmin()) {
+            throw new SecurityException(
+                    "Only administrators can view attendance records"
+            );
+        }
+
+        return attendanceRepository.findAllAttendanceRecords()
+                .stream()
+                .map(this::toAttendanceRecordResponse)
+                .toList();
+    }
+
+    private AttendanceRecordResponse toAttendanceRecordResponse(
+            AttendanceRecordProjection projection
+    ) {
+        return new AttendanceRecordResponse(
+                projection.getName(),
+                projection.getEnrollmentNumber(),
+                projection.getUserId(),
+                projection.getTeamName(),
+                projection.getTeamId(),
+                projection.getEventName(),
+                projection.getEventId(),
+                projection.getTimestamp()
         );
     }
 }
