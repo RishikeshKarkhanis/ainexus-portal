@@ -115,6 +115,83 @@ const activities = [
   },
 ];
 
+const lifeAtNexusEvents = [
+  {
+    id: "portfolio-sprint-2026",
+    eventName: "Portfolio Sprint 2026",
+    description: "A collaborative event to build and showcase student portfolios.",
+    images: [
+      {
+        src: "/events/portfolio-sprint-2026/1.jpeg",
+        alt: "Participants at Portfolio Sprint",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/2.jpeg",
+        alt: "Students collaborating during the event",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/3.jpeg",
+        alt: "Participants showcasing their portfolios",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/4.jpeg",
+        alt: "Event participants posing for a group photo",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/5.jpeg",
+        alt: "Students enjoying the event",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/6.jpeg",
+        alt: "Event attendees networking",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/7.jpeg",
+        alt: "Students sharing their experiences",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/8.jpeg",
+        alt: "Event organizers posing for a group photo",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/9.jpeg",
+        alt: "Students posing for a group photo",
+      },
+      {
+        src: "/events/portfolio-sprint-2026/10.jpeg",
+        alt: "Event participants enjoying the session",
+      },
+    ],
+  },
+  {
+    id: "intelli-ai-arena-2026",
+    eventName: "Intelli AI Arena 2026",
+    description: "A 6 hour hackathon where students built AI-powered solutions to real-world problems.",
+    images: [
+      {
+        src: "/events/intelli-ai-arena-2026/1.jpeg",
+        alt: "AI hackathon session",
+      },
+      {
+        src: "/events/intelli-ai-arena-2026/2.jpeg",
+        alt: "Students attending the hackathon",
+      },
+      {
+        src: "/events/intelli-ai-arena-2026/3.jpeg",
+        alt: "Participants showcasing their AI solutions",
+      },
+      {
+        src: "/events/intelli-ai-arena-2026/4.jpeg",
+        alt: "Event organizers posing for a group photo",
+      },
+      {
+        src: "/events/intelli-ai-arena-2026/5.jpeg",
+        alt: "Students sharing their experiences",
+      },
+    ],
+  },
+];
+
 const galleryImages = ["https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900", "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=900", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=900", "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=900"];
 
 const navigation = [
@@ -411,7 +488,14 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 function getThumbnailUrl(path) {
   if (!path) return null;
+
+  // Direct external URL
   if (path.startsWith("http")) return path;
+
+  // Local image inside the public directory
+  if (path.startsWith("/")) return path;
+
+  // Relative path inside Supabase Storage
   return `${SUPABASE_URL}/storage/v1/object/public/ainexus-assets/${path}`;
 }
 
@@ -565,17 +649,62 @@ function Team() {
 }
 
 function Gallery() {
+  const [activeEventId, setActiveEventId] = useState(lifeAtNexusEvents[0]?.id ?? null);
+
+  const activeEvent = lifeAtNexusEvents.find((event) => event.id === activeEventId);
+
   return (
     <section id="gallery" className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-      <SectionHeading eyebrow="Moments & Memories" title="Life at AI Nexus." description="A glimpse into our community, events and experiences. These are temporary gallery images and will be replaced with actual AI Nexus photographs." />
+      <SectionHeading eyebrow="Moments & Memories" title="Life at AI Nexus." description="From competitions and hackathons to workshops and community gatherings — a look back at the moments we've built together." />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {galleryImages.map((image, index) => (
-          <div key={image} className={`overflow-hidden rounded-xl border border-[#3B82D6]/20 bg-[#080D24] ${index === 0 ? "md:col-span-2 md:row-span-2" : ""}`}>
-            <img src={image} alt="AI Nexus gallery placeholder" loading="lazy" className={`h-full w-full object-cover transition duration-500 hover:scale-105 ${index === 0 ? "min-h-64 md:min-h-[420px]" : "min-h-48"}`} />
+      {lifeAtNexusEvents.length > 0 && (
+        <>
+          {/* Horizontal event navigation */}
+          <div className="mb-10 -mx-6 overflow-x-auto px-6 pb-3 lg:mx-0 lg:px-0">
+            <div className="flex w-max gap-3">
+              {lifeAtNexusEvents.map((event) => {
+                const isActive = activeEventId === event.id;
+
+                return (
+                  <button key={event.id} type="button" onClick={() => setActiveEventId(event.id)} className={`whitespace-nowrap border px-5 py-3 text-sm transition ${isActive ? "border-[#3B82D6] bg-[#1E4F9A] text-[#E8E5DF]" : "border-[#3B82D6]/20 text-[#AEBBD0] hover:border-[#3B82D6]/60 hover:text-[#E8E5DF]"}`}>
+                    {event.eventName}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        ))}
-      </div>
+
+          {/* Selected event */}
+          {activeEvent && (
+            <div key={activeEvent.id}>
+              <div className="mb-6 flex flex-col justify-between gap-3 border-b border-[#3B82D6]/20 pb-5 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3B82D6]">EVENT ARCHIVE</p>
+
+                  <h3 className="mt-3 text-2xl font-semibold text-[#E8E5DF] sm:text-3xl">{activeEvent.eventName}</h3>
+
+                  {activeEvent.description && <p className="mt-2 text-sm leading-6 text-[#AEBBD0]">{activeEvent.description}</p>}
+                </div>
+
+                <span className="text-xs text-[#8B929F]">{activeEvent.images.length} PHOTOGRAPHS</span>
+              </div>
+
+              {/* Preserve existing asymmetric image layout */}
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {activeEvent.images.map((image, imageIndex) => (
+                  <div key={`${activeEvent.id}-${imageIndex}`} className={`group relative overflow-hidden border border-[#3B82D6]/20 bg-[#080D24] ${imageIndex === 0 ? "col-span-2 row-span-2" : ""}`}>
+                    <img src={getThumbnailUrl(image.src)} alt={image.alt || activeEvent.eventName} loading="lazy" className={`h-full w-full object-cover transition duration-700 group-hover:scale-105 ${imageIndex === 0 ? "min-h-64 md:min-h-[420px]" : "min-h-48"}`} />
+
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#00001F]/30 to-transparent opacity-0 transition group-hover:opacity-100" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {lifeAtNexusEvents.length === 0 && <div className="py-16 text-center text-sm text-[#AEBBD0]">Event photographs will be added soon.</div>}
     </section>
   );
 }
