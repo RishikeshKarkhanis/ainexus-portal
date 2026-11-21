@@ -1,4 +1,3 @@
-
 package com.ainexus.backend.service;
 
 import com.ainexus.backend.dto.request.LoginRequest;
@@ -41,6 +40,30 @@ public class AuthService {
             );
         }
 
+        // Normalize the optional enrollment number
+        String enrollmentNumber = request.getEnrollmentNumber() == null
+                ? null
+                : request.getEnrollmentNumber().trim();
+
+        if (enrollmentNumber != null && enrollmentNumber.isEmpty()) {
+            enrollmentNumber = null;
+        }
+
+        // Acropolis students must provide an enrollment number
+        if (request.isAcropolisStudent()
+                && enrollmentNumber == null) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Acropolis students must provide their enrollment number."
+            );
+        }
+
+        // External users should not submit an institutional enrollment number
+        if (!request.isAcropolisStudent()) {
+            enrollmentNumber = null;
+        }
+
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -48,10 +71,21 @@ public class AuthService {
             );
         }
 
+        // Prevent duplicate enrollment numbers
+        if (enrollmentNumber != null
+                && userRepository.existsByEnrollmentNumber(enrollmentNumber)) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "This enrollment number is already registered."
+            );
+        }
+
         User user = new User();
 
         user.setName(request.getName().trim());
         user.setEmail(email);
+        user.setEnrollmentNumber(enrollmentNumber);
         user.setPasswordHash(
                 passwordEncoder.encode(request.getPassword())
         );

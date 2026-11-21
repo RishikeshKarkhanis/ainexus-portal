@@ -18,6 +18,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByEmail(String email);
 
     Optional<User> findByEmail(String email);
+    boolean existsByEnrollmentNumber(String enrollmentNumber);
 
     // Fetch only users with admin privileges
     List<User> findAllByIsAdminTrue();

@@ -22,6 +22,7 @@ export default function Auth() {
     email: "",
     password: "",
     confirmPassword: "",
+    enrollmentNumber: "",
     otp: "",
   });
 
@@ -40,6 +41,7 @@ export default function Auth() {
   const changeMode = (nextMode) => {
     setMode(nextMode);
     setIsAcropolisStudent(false);
+    setFormData((prev) => ({ ...prev, enrollmentNumber: "" }));
     setRecoveryStep("email");
     setStatus("idle");
     setMessage("");
@@ -148,6 +150,7 @@ export default function Auth() {
           email: formData.email,
           password: formData.password,
           acropolisStudent: isAcropolisStudent,
+          enrollmentNumber: isAcropolisStudent ? formData.enrollmentNumber.trim() : null,
         });
 
         setStatus("success");
@@ -399,12 +402,31 @@ export default function Auth() {
 
               {isRegister && (
                 <label className="flex cursor-pointer items-start gap-3 border border-[#3B82D6]/20 bg-[#00001F]/35 p-3 transition hover:border-[#3B82D6]/45">
-                  <input type="checkbox" checked={isAcropolisStudent} onChange={(e) => setIsAcropolisStudent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#3B82D6]" />
+                  <input
+                    type="checkbox"
+                    checked={isAcropolisStudent}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setIsAcropolisStudent(checked);
+                      if (!checked) {
+                        setFormData((prev) => ({ ...prev, enrollmentNumber: "" }));
+                      }
+                    }}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#3B82D6]"
+                  />
                   <span>
                     <span className="block text-sm text-[#E8E5DF]">I'm an Acropolis student</span>
                     <span className="mt-1 block text-xs leading-5 text-[#AEBBD0]">If selected, use your institutional email address ending in @acropolis.in.</span>
                   </span>
                 </label>
+              )}
+
+              {isRegister && (
+                <div>
+                  <label className="mb-2 block text-xs tracking-[0.12em] text-[#AEBBD0]">Enrollment Number</label>
+                  <input type="text" name="enrollmentNumber" value={formData.enrollmentNumber} onChange={updateField} placeholder={isAcropolisStudent ? "Enter your enrollment number" : "Available to Acropolis students only"} disabled={!isAcropolisStudent} required={isAcropolisStudent} autoComplete="off" className={`${inputClass} pl-0 ${isAcropolisStudent ? "" : "cursor-not-allowed border-[#EAB308]/30 bg-[#EAB308]/5 text-[#8B929F] opacity-70"}`} />
+                  {!isAcropolisStudent && <p className="mt-2 border-l-2 border-yellow-400/70 bg-yellow-400/5 px-3 py-2 text-xs leading-5 text-yellow-300">Enrollment number should only be filled by Acropolis students.</p>}
+                </div>
               )}
 
               {isForgot && recoveryStep === "otp" && (

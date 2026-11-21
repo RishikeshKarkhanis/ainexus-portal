@@ -39,6 +39,10 @@ public class User {
     @Column(name = "is_admin", nullable = false)
     private boolean isAdmin = false;
 
+    @Setter
+    @Column(name = "enrollment_number", length = 30, unique = true)
+    private String enrollmentNumber;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -23,4 +23,5 @@ public class RegisterRequest {
     private String password;
 
     private boolean acropolisStudent;
+    private String enrollmentNumber;
 }

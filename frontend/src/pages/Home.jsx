@@ -141,26 +141,6 @@ const lifeAtNexusEvents = [
         src: "/events/portfolio-sprint-2026/5.jpeg",
         alt: "Students enjoying the event",
       },
-      {
-        src: "/events/portfolio-sprint-2026/6.jpeg",
-        alt: "Event attendees networking",
-      },
-      {
-        src: "/events/portfolio-sprint-2026/7.jpeg",
-        alt: "Students sharing their experiences",
-      },
-      {
-        src: "/events/portfolio-sprint-2026/8.jpeg",
-        alt: "Event organizers posing for a group photo",
-      },
-      {
-        src: "/events/portfolio-sprint-2026/9.jpeg",
-        alt: "Students posing for a group photo",
-      },
-      {
-        src: "/events/portfolio-sprint-2026/10.jpeg",
-        alt: "Event participants enjoying the session",
-      },
     ],
   },
   {
