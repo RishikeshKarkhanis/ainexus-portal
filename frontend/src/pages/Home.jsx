@@ -190,6 +190,29 @@ const lifeAtNexusEvents = [
       },
     ],
   },
+  {
+    id: "code-and-compass-2024",
+    eventName: "Code and Compass 2024",
+    description: "A coding competition for students to showcase their programming skills.",
+    images: [
+      {
+        src: "/events/code-and-compass-2024/1.jpeg",
+        alt: "Participants at Code and Compass",
+      },
+      {
+        src: "/events/code-and-compass-2024/2.jpeg",
+        alt: "Students solving coding challenges",
+      },
+      {
+        src: "/events/code-and-compass-2024/3.jpeg",
+        alt: "Event participants posing for a group photo",
+      },
+      {
+        src: "/events/code-and-compass-2024/4.jpeg",
+        alt: "Students competing in the coding competition",
+      },
+    ],
+  },
 ];
 
 const galleryImages = ["https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900", "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=900", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=900", "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=900"];
