@@ -24,8 +24,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     long countByIsAdminTrue();
 
-    long countByEmailVerifiedTrue();
-
     // Search all users and indicate event registration status
     @Query(value = """
         SELECT

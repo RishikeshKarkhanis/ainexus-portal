@@ -32,9 +32,6 @@ public class User {
     @Column(name = "password_hash")
     private String passwordHash;
 
-    @Column(name = "email_verified", nullable = false)
-    private boolean emailVerified = false;
-
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

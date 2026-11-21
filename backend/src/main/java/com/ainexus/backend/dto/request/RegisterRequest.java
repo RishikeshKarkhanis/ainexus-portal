@@ -21,4 +21,6 @@ public class RegisterRequest {
     @NotBlank
     @Size(min = 8)
     private String password;
+
+    private boolean acropolisStudent;
 }

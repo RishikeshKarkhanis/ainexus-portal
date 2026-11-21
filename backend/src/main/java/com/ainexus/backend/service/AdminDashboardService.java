@@ -19,15 +19,9 @@ public class AdminDashboardService {
 
         long totalAdmins = userRepository.countByIsAdminTrue();
 
-        long verifiedUsers = userRepository.countByEmailVerifiedTrue();
-
-        long unverifiedUsers = totalUsers - verifiedUsers;
-
         return new AdminDashboardResponse(
                 totalUsers,
-                totalAdmins,
-                verifiedUsers,
-                unverifiedUsers
+                totalAdmins
         );
     }
 }

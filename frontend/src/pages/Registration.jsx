@@ -122,7 +122,9 @@ export default function Registration() {
 
   // Add teammate
   const addMember = (user) => {
-    if (user.alreadyRegistered) return;
+    const isAcropolisEmail = user.email?.trim().toLowerCase().endsWith("@acropolis.in");
+
+    if (user.alreadyRegistered || (event?.collegeOnly && !isAcropolisEmail)) return;
 
     const maxSize = event?.maxTeamSize;
 
@@ -527,9 +529,12 @@ export default function Registration() {
                       <div className="mt-3 overflow-hidden rounded-none border border-[#3B82D6]/20">
                         {searchResults.map((user) => {
                           const alreadyRegistered = user.alreadyRegistered === true;
+                          const isAcropolisEmail = user.email?.trim().toLowerCase().endsWith("@acropolis.in");
+                          const isIneligible = event?.collegeOnly === true && !isAcropolisEmail;
+                          const isDisabled = alreadyRegistered || isIneligible;
 
                           return (
-                            <div key={user.userId} className={`flex w-full items-center gap-3 border-b border-[#3B82D6]/10 p-4 last:border-b-0 ${alreadyRegistered ? "bg-[#080D24] opacity-60" : "transition hover:bg-[#3B82D6]/[0.06]"}`}>
+                            <div key={user.userId} className={`flex w-full items-center gap-3 border-b border-[#3B82D6]/10 p-4 last:border-b-0 ${isDisabled ? "bg-[#080D24] opacity-60" : "transition hover:bg-[#3B82D6]/[0.06]"}`}>
                               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3B82D6]/10 text-sm font-semibold text-[#3B82D6]">{user.name?.charAt(0)?.toUpperCase()}</div>
 
                               <div className="min-w-0 flex-1">
@@ -539,8 +544,12 @@ export default function Registration() {
 
                               {alreadyRegistered ? (
                                 <span className="shrink-0 rounded-full bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400">Registered</span>
+                              ) : isIneligible ? (
+                                <span className="shrink-0 rounded-full bg-yellow-500/10 px-3 py-1.5 text-xs font-semibold text-yellow-400" title="Acropolis-only events require an @acropolis.in email address">
+                                  Acropolis email required
+                                </span>
                               ) : (
-                                <button type="button" onClick={() => addMember(user)} disabled={alreadyRegistered} aria-label={`Add ${user.name}`} className="shrink-0 rounded-none p-2 text-[#3B82D6] transition hover:bg-[#3B82D6]/10 hover:text-[#6F91D8] disabled:cursor-not-allowed disabled:opacity-40">
+                                <button type="button" onClick={() => addMember(user)} disabled={isDisabled} aria-label={`Add ${user.name}`} className="shrink-0 rounded-none p-2 text-[#3B82D6] transition hover:bg-[#3B82D6]/10 hover:text-[#6F91D8] disabled:cursor-not-allowed disabled:opacity-40">
                                   <UserPlus size={19} />
                                 </button>
                               )}

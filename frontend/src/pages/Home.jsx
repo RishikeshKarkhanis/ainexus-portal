@@ -458,36 +458,6 @@ function About() {
   );
 }
 
-function WhatWeDo() {
-  return (
-    <section className="border-y border-[#3B82D6]/20 bg-[#080D24] py-24">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <SectionHeading eyebrow="Explore" title="Learn. Build. Innovate." description="We believe the best way to understand technology is to work with it. Explore the areas that drive our community." />
-
-        <div className="grid gap-5 md:grid-cols-3">
-          {activities.map((activity, index) => {
-            const Icon = activity.icon;
-
-            return (
-              <div key={activity.title} className="rounded-2xl border border-[#3B82D6]/20 bg-[#080D24] p-8 transition hover:border-[#3B82D6]/40">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#3B82D6]/10 text-[#3B82D6]">
-                  <Icon size={28} strokeWidth={1.7} />
-                </div>
-
-                <p className="mt-8 text-xs font-semibold tracking-widest text-[#8B929F]">0{index + 1}</p>
-
-                <h3 className="mt-3 text-xl font-semibold text-[#E8E5DF]">{activity.title}</h3>
-
-                <p className="mt-4 text-sm leading-7 text-[#AEBBD0]">{activity.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 function getThumbnailUrl(path) {
@@ -626,10 +596,10 @@ function Team() {
   return (
     <section id="team" className="border-y border-[#3B82D6]/20 bg-[#080D24] py-24">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <SectionHeading eyebrow="The People Behind AI Nexus" title="Meet Our Team." description="A community is built by the people behind it. Meet the faculty and students who guide AI Nexus." centered />
+        <SectionHeading eyebrow="The People Behind AI Nexus Club" title="Meet Our Team." description="A community is built by the people behind it. Meet the faculty and students who guide AI Nexus." centered />
 
         <div className="mb-20">
-          <h3 className="mb-7 text-center text-xl font-semibold text-[#E8E5DF]">Faculty</h3>
+          <h3 className="mb-7 text-center text-xl font-semibold text-[#E8E5DF]">Faculties</h3>
 
           <div className="mx-auto grid max-w-xl grid-cols-2 gap-5">
             {faculty.map((member) => (
@@ -1058,7 +1028,6 @@ export default function Home() {
       <main>
         <Hero />
         <About />
-        <WhatWeDo />
         <Events events={events} loading={eventsLoading} error={eventsError} onRegister={handleEventRegister} />
         <Team />
         <Gallery />

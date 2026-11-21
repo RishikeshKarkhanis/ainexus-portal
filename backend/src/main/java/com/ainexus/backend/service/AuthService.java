@@ -31,6 +31,16 @@ public class AuthService {
                 .trim()
                 .toLowerCase(Locale.ROOT);
 
+        // Acropolis student email validation
+        if (request.isAcropolisStudent()
+                && !email.endsWith("@acropolis.in")) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Acropolis students must register using their @acropolis.in email address."
+            );
+        }
+
         if (userRepository.existsByEmail(email)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,

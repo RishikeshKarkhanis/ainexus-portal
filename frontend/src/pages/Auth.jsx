@@ -10,6 +10,7 @@ export default function Auth() {
   const { login, register } = useAuth();
 
   const [mode, setMode] = useState("login");
+  const [isAcropolisStudent, setIsAcropolisStudent] = useState(false);
   const [isLight, setIsLight] = useState(false);
   const [recoveryStep, setRecoveryStep] = useState("email");
 
@@ -38,6 +39,7 @@ export default function Auth() {
 
   const changeMode = (nextMode) => {
     setMode(nextMode);
+    setIsAcropolisStudent(false);
     setRecoveryStep("email");
     setStatus("idle");
     setMessage("");
@@ -129,6 +131,12 @@ export default function Auth() {
       }
 
       if (mode === "register") {
+        if (isAcropolisStudent && !/^[^@\s]+@acropolis\.in$/i.test(formData.email.trim())) {
+          setStatus("error");
+          setMessage('Acropolis students must register using an email ending in "@acropolis.in".');
+          return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
           setStatus("error");
           setMessage("Passwords do not match.");
@@ -139,6 +147,7 @@ export default function Auth() {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          acropolisStudent: isAcropolisStudent,
         });
 
         setStatus("success");
@@ -295,7 +304,10 @@ export default function Auth() {
           @keyframes orbit-pulse { 0%,100% { transform: scale(1); opacity: .72; } 50% { transform: scale(1.035); opacity: 1; } }
         }
       `}</style>
-      <div className="pointer-events-none absolute inset-0 opacity-70" style={{ backgroundImage: "radial-gradient(1px 1px at 8% 18%, rgba(232,229,223,.75) 50%, transparent 100%), radial-gradient(1px 1px at 24% 72%, rgba(174,187,208,.6) 50%, transparent 100%), radial-gradient(1.5px 1.5px at 48% 28%, rgba(232,229,223,.65) 50%, transparent 100%), radial-gradient(1px 1px at 71% 82%, rgba(111,145,216,.8) 50%, transparent 100%), radial-gradient(1px 1px at 88% 34%, rgba(232,229,223,.7) 50%, transparent 100%)", backgroundSize: "420px 360px" }} />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-70"
+        style={{ backgroundImage: "radial-gradient(1px 1px at 8% 18%, rgba(232,229,223,.75) 50%, transparent 100%), radial-gradient(1px 1px at 24% 72%, rgba(174,187,208,.6) 50%, transparent 100%), radial-gradient(1.5px 1.5px at 48% 28%, rgba(232,229,223,.65) 50%, transparent 100%), radial-gradient(1px 1px at 71% 82%, rgba(111,145,216,.8) 50%, transparent 100%), radial-gradient(1px 1px at 88% 34%, rgba(232,229,223,.7) 50%, transparent 100%)", backgroundSize: "420px 360px" }}
+      />
 
       <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between border-b border-[#3B82D6]/30 pb-5">
         <Link to="/" className="flex items-center gap-4">
@@ -308,13 +320,7 @@ export default function Auth() {
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => setIsLight((current) => !current)}
-            aria-label={isLight ? "Switch to dark mode" : "Switch to light mode"}
-            title={isLight ? "Switch to dark mode" : "Switch to light mode"}
-            className="inline-flex h-10 w-10 items-center justify-center border border-[#3B82D6]/35 text-[#AEBBD0] transition hover:border-[#3B82D6] hover:text-[#E8E5DF]"
-          >
+          <button type="button" onClick={() => setIsLight((current) => !current)} aria-label={isLight ? "Switch to dark mode" : "Switch to light mode"} title={isLight ? "Switch to dark mode" : "Switch to light mode"} className="inline-flex h-10 w-10 items-center justify-center border border-[#3B82D6]/35 text-[#AEBBD0] transition hover:border-[#3B82D6] hover:text-[#E8E5DF]">
             {isLight ? <Moon size={18} /> : <Sun size={18} />}
           </button>
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-[#AEBBD0] transition hover:text-[#E8E5DF]">
@@ -326,15 +332,23 @@ export default function Auth() {
       <main className="relative z-10 mx-auto grid min-h-[calc(100vh-125px)] max-w-7xl items-center gap-12 py-10 lg:grid-cols-[1.05fr_0.85fr] lg:gap-24 lg:py-12">
         <section className="relative hidden min-h-[590px] flex-col justify-center lg:flex">
           <p className="auth-kicker mb-8 flex items-center gap-4 text-[10px] tracking-[0.2em] text-[#6F91D8]">
-            <span>✦ &nbsp; DEPARTMENT OF CSE (AI &amp; ML)</span><span className="h-px w-20 bg-[#3B82D6]/70" />
+            <span>✦ &nbsp; DEPARTMENT OF CSE (AI &amp; ML)</span>
+            <span className="h-px w-20 bg-[#3B82D6]/70" />
           </p>
-          <h1 className="max-w-2xl text-7xl leading-[0.96] tracking-[-0.055em] text-[#E8E5DF] xl:text-[6.5rem]">Ideas take<br /><span className="italic text-[#6F91D8]">shape here.</span></h1>
+          <h1 className="max-w-2xl text-7xl leading-[0.96] tracking-[-0.055em] text-[#E8E5DF] xl:text-[6.5rem]">
+            Ideas take
+            <br />
+            <span className="italic text-[#6F91D8]">shape here.</span>
+          </h1>
           <p className="mt-7 max-w-lg text-2xl italic leading-snug text-[#AEBBD0]">A community built on curiosity, collaboration and technology.</p>
           <p className="mt-7 max-w-md text-sm leading-8 text-[#AEBBD0]">Connect with fellow builders, take part in events and explore what you can create with AI Nexus.</p>
           <div className="auth-grid relative mt-12 h-52 max-w-lg overflow-hidden border border-[#3B82D6]/30 p-6">
             <div className="auth-orbit auth-orbit-outer absolute right-8 top-5 h-40 w-40 rounded-full" />
             <div className="auth-orbit absolute right-[4.25rem] top-[3.25rem] h-24 w-24 rounded-full" />
-            <div className="absolute bottom-6 left-6"><p className="text-[9px] tracking-[0.25em] text-[#6F91D8]">FIG. 02 — YOUR NEXT CHAPTER</p><p className="mt-2 text-xs text-[#AEBBD0]">Curiosity into capability.</p></div>
+            <div className="absolute bottom-6 left-6">
+              <p className="text-[9px] tracking-[0.25em] text-[#6F91D8]">FIG. 02 — YOUR NEXT CHAPTER</p>
+              <p className="mt-2 text-xs text-[#AEBBD0]">Curiosity into capability.</p>
+            </div>
           </div>
         </section>
 
@@ -366,7 +380,8 @@ export default function Auth() {
               {isRegister && (
                 <div>
                   <label className="mb-2 block text-xs tracking-[0.12em] text-[#AEBBD0]">Full Name</label>
-                  <div className="relative"><UserRound size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
+                  <div className="relative">
+                    <UserRound size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
                     <input type="text" name="name" value={formData.name} onChange={updateField} placeholder="Enter your full name" autoComplete="name" required className={inputClass} />
                   </div>
                 </div>
@@ -375,19 +390,50 @@ export default function Auth() {
               {(!isForgot || recoveryStep === "email") && (
                 <div>
                   <label className="mb-2 block text-xs tracking-[0.12em] text-[#AEBBD0]">Email Address</label>
-                  <div className="relative"><Mail size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
                     <input type="email" name="email" value={formData.email} onChange={updateField} placeholder="you@example.com" autoComplete="email" required readOnly={isForgot && recoveryStep !== "email"} className={`${inputClass} ${isForgot && recoveryStep !== "email" ? "cursor-not-allowed opacity-60" : ""}`} />
                   </div>
                 </div>
               )}
 
+              {isRegister && (
+                <label className="flex cursor-pointer items-start gap-3 border border-[#3B82D6]/20 bg-[#00001F]/35 p-3 transition hover:border-[#3B82D6]/45">
+                  <input type="checkbox" checked={isAcropolisStudent} onChange={(e) => setIsAcropolisStudent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-[#3B82D6]" />
+                  <span>
+                    <span className="block text-sm text-[#E8E5DF]">I'm an Acropolis student</span>
+                    <span className="mt-1 block text-xs leading-5 text-[#AEBBD0]">If selected, use your institutional email address ending in @acropolis.in.</span>
+                  </span>
+                </label>
+              )}
+
               {isForgot && recoveryStep === "otp" && (
                 <div>
                   <label className="mb-2 block text-xs tracking-[0.12em] text-[#AEBBD0]">Verification Code</label>
-                  <div className="relative"><ShieldCheck size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
-                    <input type="text" name="otp" value={formData.otp} onChange={(e) => { const value = e.target.value.replace(/\D/g, "").slice(0, 6); setFormData((prev) => ({ ...prev, otp: value })); }} placeholder="Enter 6-digit OTP" inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" required className={inputClass} />
+                  <div className="relative">
+                    <ShieldCheck size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
+                    <input
+                      type="text"
+                      name="otp"
+                      value={formData.otp}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                        setFormData((prev) => ({ ...prev, otp: value }));
+                      }}
+                      placeholder="Enter 6-digit OTP"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      pattern="[0-9]{6}"
+                      required
+                      className={inputClass}
+                    />
                   </div>
-                  <div className="mt-3 text-right"><button type="button" onClick={resendOtp} disabled={isLoading} className="text-xs text-[#6F91D8] transition hover:text-[#E8E5DF] disabled:opacity-50">Resend OTP</button></div>
+                  <div className="mt-3 text-right">
+                    <button type="button" onClick={resendOtp} disabled={isLoading} className="text-xs text-[#6F91D8] transition hover:text-[#E8E5DF] disabled:opacity-50">
+                      Resend OTP
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -395,11 +441,18 @@ export default function Auth() {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <label className="block text-xs tracking-[0.12em] text-[#AEBBD0]">{isForgot ? "New Password" : "Password"}</label>
-                    {isLogin && <button type="button" onClick={() => changeMode("forgot")} className="text-xs text-[#6F91D8] transition hover:text-[#E8E5DF]">Forgot Password?</button>}
+                    {isLogin && (
+                      <button type="button" onClick={() => changeMode("forgot")} className="text-xs text-[#6F91D8] transition hover:text-[#E8E5DF]">
+                        Forgot Password?
+                      </button>
+                    )}
                   </div>
-                  <div className="relative"><LockKeyhole size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
+                  <div className="relative">
+                    <LockKeyhole size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
                     <input type={showPassword ? "text" : "password"} name="password" value={formData.password} onChange={updateField} placeholder={isForgot ? "Enter your new password" : "Enter your password"} autoComplete={isLogin ? "current-password" : "new-password"} minLength={8} maxLength={72} required className={inputClass} />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-1 top-1/2 -translate-y-1/2 text-[#8B929F] transition hover:text-[#E8E5DF]">{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-1 top-1/2 -translate-y-1/2 text-[#8B929F] transition hover:text-[#E8E5DF]">
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
               )}
@@ -407,32 +460,73 @@ export default function Auth() {
               {(isRegister || (isForgot && recoveryStep === "reset")) && (
                 <div>
                   <label className="mb-2 block text-xs tracking-[0.12em] text-[#AEBBD0]">Confirm Password</label>
-                  <div className="relative"><LockKeyhole size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
+                  <div className="relative">
+                    <LockKeyhole size={18} className="absolute left-0 top-1/2 -translate-y-1/2 text-[#6F91D8]" />
                     <input type={showConfirmPassword ? "text" : "password"} name="confirmPassword" value={formData.confirmPassword} onChange={updateField} placeholder="Re-enter your password" autoComplete="new-password" minLength={8} maxLength={72} required className={inputClass} />
-                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? "Hide password" : "Show password"} className="absolute right-1 top-1/2 -translate-y-1/2 text-[#8B929F] transition hover:text-[#E8E5DF]">{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} aria-label={showConfirmPassword ? "Hide password" : "Show password"} className="absolute right-1 top-1/2 -translate-y-1/2 text-[#8B929F] transition hover:text-[#E8E5DF]">
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
                 </div>
               )}
 
               {message && (
                 <div className={`flex items-start gap-2 border p-3 text-sm ${status === "success" ? "border-green-500/30 bg-green-500/5 text-green-400" : "border-red-500/30 bg-red-500/5 text-red-400"}`}>
-                  {status === "success" && <CheckCircle2 size={17} className="mt-0.5 shrink-0" />}<p>{message}</p>
+                  {status === "success" && <CheckCircle2 size={17} className="mt-0.5 shrink-0" />}
+                  <p>{message}</p>
                 </div>
               )}
 
               {isForgot && recoveryStep === "success" ? (
-                <button type="button" onClick={() => { changeMode("login"); setFormData((prev) => ({ ...prev, password: "", confirmPassword: "", otp: "" })); }} className="flex w-full items-center justify-center gap-3 bg-[#1E4F9A] px-6 py-4 text-sm text-[#E8E5DF] transition hover:bg-[#3B82D6]">Continue to Login <ArrowRight size={17} /></button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    changeMode("login");
+                    setFormData((prev) => ({ ...prev, password: "", confirmPassword: "", otp: "" }));
+                  }}
+                  className="flex w-full items-center justify-center gap-3 bg-[#1E4F9A] px-6 py-4 text-sm text-[#E8E5DF] transition hover:bg-[#3B82D6]">
+                  Continue to Login <ArrowRight size={17} />
+                </button>
               ) : (
                 <button type="submit" disabled={isLoading} className="flex w-full items-center justify-center gap-3 bg-[#1E4F9A] px-6 py-4 text-sm text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:opacity-60">
-                  {isLoading ? <><LoaderCircle size={18} className="animate-spin" />Please wait...</> : <>{submitLabel}<ArrowRight size={17} /></>}
+                  {isLoading ? (
+                    <>
+                      <LoaderCircle size={18} className="animate-spin" />
+                      Please wait...
+                    </>
+                  ) : (
+                    <>
+                      {submitLabel}
+                      <ArrowRight size={17} />
+                    </>
+                  )}
                 </button>
               )}
             </form>
 
             <div className="mt-7 border-t border-[#3B82D6]/25 pt-6 text-center">
-              {isLogin && <p className="text-sm text-[#AEBBD0]">Don't have an account? <button type="button" onClick={() => changeMode("register")} className="ml-1 text-[#6F91D8] transition hover:text-[#E8E5DF]">Create Account</button></p>}
-              {isRegister && <p className="text-sm text-[#AEBBD0]">Already have an account? <button type="button" onClick={() => changeMode("login")} className="ml-1 text-[#6F91D8] transition hover:text-[#E8E5DF]">Sign In</button></p>}
-              {isForgot && recoveryStep !== "success" && <button type="button" onClick={() => changeMode("login")} className="inline-flex items-center gap-2 text-sm text-[#6F91D8] transition hover:text-[#E8E5DF]"><ArrowLeft size={15} />Back to Sign In</button>}
+              {isLogin && (
+                <p className="text-sm text-[#AEBBD0]">
+                  Don't have an account?{" "}
+                  <button type="button" onClick={() => changeMode("register")} className="ml-1 text-[#6F91D8] transition hover:text-[#E8E5DF]">
+                    Create Account
+                  </button>
+                </p>
+              )}
+              {isRegister && (
+                <p className="text-sm text-[#AEBBD0]">
+                  Already have an account?{" "}
+                  <button type="button" onClick={() => changeMode("login")} className="ml-1 text-[#6F91D8] transition hover:text-[#E8E5DF]">
+                    Sign In
+                  </button>
+                </p>
+              )}
+              {isForgot && recoveryStep !== "success" && (
+                <button type="button" onClick={() => changeMode("login")} className="inline-flex items-center gap-2 text-sm text-[#6F91D8] transition hover:text-[#E8E5DF]">
+                  <ArrowLeft size={15} />
+                  Back to Sign In
+                </button>
+              )}
             </div>
           </div>
           <p className="mt-7 text-center text-xs tracking-wide text-[#8B929F]">© {new Date().getFullYear()} AI Nexus · Acropolis Institute</p>
