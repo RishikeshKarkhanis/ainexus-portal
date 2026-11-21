@@ -106,7 +106,10 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
+                List.of(
+                        "http://localhost:5173",
+                        "https://ainexus-portal-frontend-jet.vercel.app"
+                )
         );
 
         configuration.setAllowedMethods(
