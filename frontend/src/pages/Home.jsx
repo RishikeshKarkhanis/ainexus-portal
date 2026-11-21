@@ -219,9 +219,9 @@ const galleryImages = ["index/logo.jpeg", "index/acropolis.jpeg", "https://image
 
 const navigation = [
   { label: "Home", href: "#home" },
+  { label: "About", href: "#about" },
   { label: "Events", href: "#events" },
   { label: "Team", href: "#team" },
-  { label: "About", href: "#about" },
   { label: "Gallery", href: "#gallery" },
   { label: "Contact", href: "#contact" },
 ];
@@ -269,10 +269,13 @@ function Navbar({ isLight, onToggleTheme }) {
             </Link>
           ) : (
             <>
-              <button onClick={() => setProfileOpen(!profileOpen)} className="flex items-center gap-3 rounded-full border border-[#3B82D6]/50 px-5 py-2 text-sm text-[#E8E5DF] transition hover:bg-[#080D24]">
-                <UserRound size={17} className="text-[#3B82D6]" />
-                <span>{user?.name?.split(" ")[0] || "Account"}</span>
-                <span className={`text-[#AEBBD0] transition ${profileOpen ? "rotate-180" : ""}`}>⌄</span>
+              <button onClick={() => setProfileOpen(!profileOpen)} aria-label="Open profile menu" title={user?.name || "Account"} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#3B82D6]/50 bg-[#3B82D6]/10 text-sm font-semibold tracking-wide text-[#E8E5DF] transition hover:border-[#3B82D6] hover:bg-[#3B82D6]/20">
+                {user?.name
+                  ?.trim()
+                  .split(/\s+/)
+                  .map((part) => part.charAt(0).toUpperCase())
+                  .join("")
+                  .slice(0, 2) || "U"}
               </button>
 
               {profileOpen && (

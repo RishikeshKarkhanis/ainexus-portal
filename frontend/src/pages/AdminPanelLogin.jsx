@@ -163,7 +163,7 @@ export default function AdminPanelLogin() {
       <section className="relative z-10 w-full max-w-md">
         <Link to="/" className="mb-8 inline-flex items-center gap-2 text-sm text-[#AEBBD0] transition hover:text-[#E8E5DF]">
           <ArrowLeft size={16} />
-          Back to AI Nexus
+          Back to Home
         </Link>
 
         <div className="border border-[#3B82D6]/30 bg-[#080D24]/95 p-7 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-9">
@@ -172,9 +172,9 @@ export default function AdminPanelLogin() {
               <ShieldCheck size={32} strokeWidth={1.5} />
             </div>
 
-            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#3B82D6]">AI Nexus · Restricted Access</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#3B82D6]">AI Nexus Club · Restricted Access</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#E8E5DF]">Admin Verification</h1>
-            <p className="mt-3 max-w-xs text-sm leading-6 text-[#AEBBD0]">Verify your administrator account to access the AI Nexus control panel.</p>
+            <p className="mt-3 max-w-xs text-sm leading-6 text-[#AEBBD0]">Verify your administrator account to access the AI Nexus Club control panel.</p>
           </div>
 
           <div className="mb-7 flex items-center gap-3">
@@ -299,12 +299,12 @@ export default function AdminPanelLogin() {
           <div className="mt-8 border-t border-[#3B82D6]/15 pt-5 text-center">
             <p className="text-xs leading-5 text-[#77839B]">
               <LockKeyhole size={12} className="mr-1 inline-block" />
-              This area is restricted to authorized AI Nexus administrators.
+              This area is restricted to authorized AI Nexus Club administrators.
             </p>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs tracking-wide text-[#65718A]">AI NEXUS · ACROPOLIS INSTITUTE</p>
+        <p className="mt-6 text-center text-xs tracking-wide text-[#65718A]">AI NEXUS CLUB · ACROPOLIS INSTITUTE</p>
       </section>
     </main>
   );
