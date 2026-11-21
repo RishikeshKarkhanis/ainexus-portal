@@ -361,7 +361,7 @@ function SectionHeading({ eyebrow, title, description, centered = false }) {
 function Hero() {
   return (
     <section id="home" className="relative overflow-hidden">
-      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 py-16 md:grid-cols-2 md:py-24 lg:px-12">
+      <div className="mx-auto grid max-w-7xl items-center gap-14 px-6 pt-6 pb-16 md:grid-cols-2 md:pt-8 md:pb-24 lg:px-12">
         <div className="relative z-10">
           <div className="mb-8 flex items-center gap-4 text-xs tracking-[0.2em] text-[#3B82D6]">
             <span>✦ &nbsp; DEPARTMENT OF CSE (AI &amp; ML)</span>
