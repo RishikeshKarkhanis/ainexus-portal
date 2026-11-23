@@ -1,0 +1,1 @@
+This text file was created to mark the backup of the latest stabe system which uses razorpay interface.....after this the payment system will be UPI QR and manual verification one.
