@@ -3,6 +3,8 @@ package com.ainexus.backend.service;
 
 import com.ainexus.backend.dto.request.CreatePaymentOrderRequest;
 import com.ainexus.backend.dto.request.VerifyPaymentRequest;
+import com.ainexus.backend.dto.request.SubmitManualPaymentRequest;
+import com.ainexus.backend.dto.response.PaymentVerificationResponse;
 
 import com.ainexus.backend.entity.Event;
 import com.ainexus.backend.entity.Payment;
@@ -97,7 +99,472 @@ public class PaymentService {
     }
 
     // ==========================================
-    // 1. CREATE RAZORPAY ORDER
+    // 1. SUBMIT MANUAL UPI PAYMENT
+    // ==========================================
+
+    @Transactional
+    public Registration submitManualPayment(
+            SubmitManualPaymentRequest request,
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Authentication required");
+        }
+
+        User leader = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UUID eventId = request.eventId();
+        UUID leaderId = leader.getUserId();
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        if (!"OPEN".equalsIgnoreCase(event.getRegistrationStatus())) {
+            throw new RuntimeException("Event registration is closed");
+        }
+
+        if (event.getRegistrationFee() == null ||
+                event.getRegistrationFee() <= 0) {
+            throw new RuntimeException("Invalid registration fee");
+        }
+
+        String teamName = request.teamName() == null
+                ? "" : request.teamName().trim();
+
+        if (teamName.length() < 3 || teamName.length() > 120) {
+            throw new RuntimeException(
+                    "Team name must be between 3 and 120 characters"
+            );
+        }
+
+        String transactionId = request.transactionId() == null
+                ? ""
+                : request.transactionId()
+                .trim()
+                .toUpperCase(java.util.Locale.ROOT);
+
+        if (transactionId.isBlank() || transactionId.length() > 100) {
+            throw new RuntimeException(
+                    "A valid UPI transaction ID is required"
+            );
+        }
+
+        if (paymentRepository.existsByTransId(transactionId)) {
+            throw new RuntimeException(
+                    "This transaction ID has already been submitted"
+            );
+        }
+
+        List<UUID> memberIds = request.memberIds();
+
+        if (memberIds == null) {
+            throw new RuntimeException("Team members are required");
+        }
+
+        Set<UUID> uniqueMemberIds = new HashSet<>(memberIds);
+
+        if (uniqueMemberIds.size() != memberIds.size()) {
+            throw new RuntimeException("Duplicate members are not allowed");
+        }
+
+        if (uniqueMemberIds.contains(leaderId)) {
+            throw new RuntimeException(
+                    "Team leader cannot be selected again"
+            );
+        }
+
+        int totalTeamSize = memberIds.size() + 1;
+
+        if (totalTeamSize < event.getMinTeamSize() ||
+                totalTeamSize > event.getMaxTeamSize()) {
+            throw new RuntimeException("Invalid team size");
+        }
+
+        List<User> selectedUsers = userRepository.findAllById(memberIds);
+
+        if (selectedUsers.size() != memberIds.size()) {
+            throw new RuntimeException(
+                    "One or more selected users do not exist"
+            );
+        }
+
+        validateMemberEligibility(eventId, leaderId, memberIds);
+
+        // Create pending registration.
+        Registration registration = new Registration();
+        registration.setEventId(eventId);
+        registration.setTeamName(teamName);
+        registration.setTransactionId(transactionId);
+        registration.setPaymentStatus("UNVERIFIED");
+
+        registration = registrationRepository.save(registration);
+
+        // Create pending payment.
+        Payment payment = new Payment();
+        payment.setRegistrationId(registration.getRegistrationId());
+        payment.setEventId(eventId);
+        payment.setPaymentStatus("UNVERIFIED");
+        payment.setTransId(transactionId);
+        payment.setAmount(
+                Math.multiplyExact(event.getRegistrationFee().longValue(), 100L)
+        );
+        payment.setCurrency("INR");
+
+        payment = paymentRepository.save(payment);
+
+        // Save team metadata.
+        PaymentMetadata metadata = new PaymentMetadata();
+        metadata.setPaymentId(payment.getPaymentId());
+        metadata.setLeaderId(leaderId);
+        metadata.setTeamName(teamName);
+        metadata.setMemberIds(memberIds.toArray(new UUID[0]));
+
+        paymentMetadataRepository.save(metadata);
+
+        return registration;
+    }
+
+    // ==========================================
+    // 2. ADMIN: FETCH PENDING MANUAL PAYMENTS
+    // ==========================================
+
+    @Transactional(readOnly = true)
+    public List<Payment> getPendingManualPayments(UUID eventId) {
+
+        if (eventId == null) {
+            throw new IllegalArgumentException("Event ID is required");
+        }
+
+        return paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
+                eventId,
+                "UNVERIFIED"
+        );
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<PaymentVerificationResponse> getPendingManualPaymentDetails(
+            UUID eventId
+    ) {
+
+        if (eventId == null) {
+            throw new IllegalArgumentException("Event ID is required");
+        }
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        List<Payment> pendingPayments =
+                paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
+                        eventId,
+                        "UNVERIFIED"
+                );
+
+        List<PaymentVerificationResponse> responses = new ArrayList<>();
+
+        for (Payment payment : pendingPayments) {
+
+            PaymentMetadata metadata = paymentMetadataRepository
+                    .findByPaymentId(payment.getPaymentId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Payment metadata not found for payment: "
+                                    + payment.getPaymentId()
+                    ));
+
+            User leader = userRepository.findById(metadata.getLeaderId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Team leader not found"
+                    ));
+
+            UUID[] memberIds = metadata.getMemberIds();
+
+            List<User> users = memberIds == null
+                    ? List.of()
+                    : userRepository.findAllById(List.of(memberIds));
+
+            List<PaymentVerificationResponse.MemberInfo> members =
+                    users.stream()
+                            .map(user ->
+                                    new PaymentVerificationResponse.MemberInfo(
+                                            user.getUserId(),
+                                            user.getName(),
+                                            user.getEmail()
+                                    )
+                            )
+                            .toList();
+
+            Registration registration = registrationRepository
+                    .findById(payment.getRegistrationId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Registration not found"
+                    ));
+
+            responses.add(
+                    new PaymentVerificationResponse(
+                            payment.getPaymentId(),
+                            registration.getRegistrationId(),
+                            event.getEventId(),
+                            event.getEventName(),
+                            metadata.getTeamName(),
+                            leader.getName(),
+                            leader.getEmail(),
+                            members,
+                            payment.getTransId(),
+                            payment.getAmount(),
+                            payment.getCurrency(),
+                            payment.getDate(),
+                            payment.getPaymentStatus()
+                    )
+            );
+        }
+
+        return responses;
+    }
+
+
+    // ==========================================
+    // 3. ADMIN: VERIFY MANUAL UPI PAYMENT
+    // ==========================================
+
+    @Transactional
+    public Registration verifyManualPayment(UUID paymentId) {
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Payment not found"));
+
+        // Idempotency check.
+        if ("VERIFIED".equalsIgnoreCase(payment.getPaymentStatus())) {
+
+            if (payment.getRegistrationId() == null) {
+                throw new RuntimeException(
+                        "Verified payment has no registration"
+                );
+            }
+
+            return registrationRepository.findById(payment.getRegistrationId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Registration not found"
+                    ));
+        }
+
+        if (!"UNVERIFIED".equalsIgnoreCase(payment.getPaymentStatus())) {
+            throw new RuntimeException(
+                    "Only unverified manual payments can be approved"
+            );
+        }
+
+        if (payment.getEventId() == null ||
+                payment.getRegistrationId() == null) {
+            throw new RuntimeException(
+                    "Payment is missing its event or registration reference"
+            );
+        }
+
+        PaymentMetadata metadata = paymentMetadataRepository
+                .findByPaymentId(paymentId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Payment metadata not found"
+                ));
+
+        Registration registration = registrationRepository
+                .findById(payment.getRegistrationId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Pending registration not found"
+                ));
+
+        if (!"UNVERIFIED".equalsIgnoreCase(registration.getPaymentStatus())) {
+            throw new RuntimeException(
+                    "Registration is no longer pending verification"
+            );
+        }
+
+        Event event = eventRepository.findById(payment.getEventId())
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        // Validate stored payment amount.
+        if (payment.getAmount() == null ||
+                event.getRegistrationFee() == null) {
+            throw new RuntimeException(
+                    "Payment amount or event fee is missing"
+            );
+        }
+
+        long expectedAmount = Math.multiplyExact(
+                event.getRegistrationFee().longValue(),
+                100L
+        );
+
+        if (payment.getAmount() != expectedAmount ||
+                !"INR".equalsIgnoreCase(payment.getCurrency())) {
+            throw new RuntimeException(
+                    "Stored payment amount does not match the event fee"
+            );
+        }
+
+        UUID[] memberArray = metadata.getMemberIds();
+
+        if (memberArray == null) {
+            throw new RuntimeException(
+                    "Team member information is missing"
+            );
+        }
+
+        List<UUID> memberIds = List.of(memberArray);
+        UUID leaderId = metadata.getLeaderId();
+
+        if (leaderId == null) {
+            throw new RuntimeException(
+                    "Team leader information is missing"
+            );
+        }
+
+        int totalTeamSize = memberIds.size() + 1;
+
+        if (totalTeamSize < event.getMinTeamSize() ||
+                totalTeamSize > event.getMaxTeamSize()) {
+            throw new RuntimeException(
+                    "Team size is no longer valid for this event"
+            );
+        }
+
+        // Recheck confirmed and pending registrations.
+        validateMemberEligibility(
+                payment.getEventId(),
+                leaderId,
+                memberIds,
+                paymentId
+        );
+
+        User leader = userRepository.findById(leaderId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Team leader not found"
+                ));
+
+        List<User> selectedUsers = userRepository.findAllById(memberIds);
+
+        if (selectedUsers.size() != memberIds.size()) {
+            throw new RuntimeException(
+                    "One or more selected team members no longer exist"
+            );
+        }
+
+        // Create team.
+        Team team = new Team();
+        team.setTeamName(metadata.getTeamName());
+        team.setEventId(payment.getEventId());
+        team.setLeaderId(leaderId);
+
+        team = teamRepository.save(team);
+
+        List<RegistrationEmail> registrationEmails = new ArrayList<>();
+
+        // Create leader membership and ticket.
+        TeamMember leaderMember = new TeamMember();
+        leaderMember.setTeamId(team.getTeamId());
+        leaderMember.setUserId(leader.getUserId());
+
+        leaderMember = teamMemberRepository.save(leaderMember);
+
+        Ticket leaderTicket = createTicket(leaderMember);
+
+        registrationEmails.add(
+                new RegistrationEmail(
+                        leader.getName(),
+                        leader.getEmail(),
+                        leaderTicket.getQrToken()
+                )
+        );
+
+        // Create teammates and their tickets.
+        for (User user : selectedUsers) {
+
+            TeamMember teamMember = new TeamMember();
+            teamMember.setTeamId(team.getTeamId());
+            teamMember.setUserId(user.getUserId());
+
+            teamMember = teamMemberRepository.save(teamMember);
+
+            Ticket ticket = createTicket(teamMember);
+
+            registrationEmails.add(
+                    new RegistrationEmail(
+                            user.getName(),
+                            user.getEmail(),
+                            ticket.getQrToken()
+                    )
+            );
+        }
+
+        // Update existing pending registration.
+        registration.setTeamId(team.getTeamId());
+        registration.setTeamName(metadata.getTeamName());
+        registration.setPaymentStatus("VERIFIED");
+
+        registrationRepository.save(registration);
+
+        // Update payment.
+        payment.setTeamId(team.getTeamId());
+        payment.setPaymentStatus("VERIFIED");
+        payment.setVerifiedAt(OffsetDateTime.now());
+
+        paymentRepository.save(payment);
+
+        // Send hall tickets after transaction commits.
+        scheduleRegistrationEmails(
+                registrationEmails,
+                event,
+                metadata.getTeamName()
+        );
+
+        return registration;
+    }
+
+    // ==========================================
+    // 4. ADMIN: REJECT MANUAL UPI PAYMENT
+    // ==========================================
+
+    @Transactional
+    public Registration rejectManualPayment(UUID paymentId) {
+
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new RuntimeException("Payment not found"));
+
+        if (!"UNVERIFIED".equalsIgnoreCase(payment.getPaymentStatus())) {
+            throw new RuntimeException(
+                    "Only unverified manual payments can be rejected"
+            );
+        }
+
+        if (payment.getRegistrationId() == null) {
+            throw new RuntimeException(
+                    "Payment has no associated registration"
+            );
+        }
+
+        Registration registration = registrationRepository
+                .findById(payment.getRegistrationId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Registration not found"
+                ));
+
+        if (!"UNVERIFIED".equalsIgnoreCase(registration.getPaymentStatus())) {
+            throw new RuntimeException(
+                    "Registration is no longer pending verification"
+            );
+        }
+
+        payment.setPaymentStatus("REJECTED");
+        paymentRepository.save(payment);
+
+        registration.setPaymentStatus("REJECTED");
+        registrationRepository.save(registration);
+
+        return registration;
+    }
+
+    // ==========================================
+    // 5. CREATE RAZORPAY ORDER
     // ==========================================
 
     @Transactional
@@ -213,7 +680,7 @@ public class PaymentService {
     }
 
     // ==========================================
-    // 2. VERIFY RAZORPAY PAYMENT
+    // 6. VERIFY RAZORPAY PAYMENT
     // ==========================================
 
     @Transactional
@@ -247,7 +714,6 @@ public class PaymentService {
             throw new RuntimeException("Invalid payment signature");
         }
 
-        // Load metadata before idempotency check.
         PaymentMetadata metadata = paymentMetadataRepository
                 .findByPaymentId(payment.getPaymentId())
                 .orElseThrow(() -> new RuntimeException(
@@ -265,7 +731,7 @@ public class PaymentService {
             );
         }
 
-        // Idempotency: don't create registration twice.
+        // Idempotency.
         if ("VERIFIED".equalsIgnoreCase(payment.getPaymentStatus())) {
 
             if (payment.getRegistrationId() == null) {
@@ -345,7 +811,6 @@ public class PaymentService {
             throw new RuntimeException("Invalid team size");
         }
 
-        // Recheck eligibility before final registration.
         validateMemberEligibility(eventId, leaderId, memberIds);
 
         User leader = userRepository.findById(leaderId)
@@ -361,10 +826,7 @@ public class PaymentService {
             );
         }
 
-        // ==========================================
-        // 3. CREATE TEAM
-        // ==========================================
-
+        // Create team.
         Team team = new Team();
 
         team.setTeamName(metadata.getTeamName());
@@ -373,12 +835,7 @@ public class PaymentService {
 
         team = teamRepository.save(team);
 
-        // Collect email details until transaction commits.
         List<RegistrationEmail> registrationEmails = new ArrayList<>();
-
-        // ==========================================
-        // 4. CREATE TEAM MEMBERS AND TICKETS
-        // ==========================================
 
         // Add leader.
         TeamMember leaderMember = new TeamMember();
@@ -419,10 +876,7 @@ public class PaymentService {
             );
         }
 
-        // ==========================================
-        // 5. CREATE REGISTRATION
-        // ==========================================
-
+        // Create registration.
         Registration registration = new Registration();
 
         registration.setEventId(eventId);
@@ -432,10 +886,7 @@ public class PaymentService {
 
         registration = registrationRepository.save(registration);
 
-        // ==========================================
-        // 6. UPDATE PAYMENT
-        // ==========================================
-
+        // Update payment.
         payment.setPaymentStatus("VERIFIED");
         payment.setRazorpayPaymentId(request.razorpayPaymentId());
         payment.setTransId(request.razorpayPaymentId());
@@ -445,7 +896,6 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        // Send individual PDF hall tickets after DB commit.
         scheduleRegistrationEmails(
                 registrationEmails,
                 event,
@@ -464,11 +914,26 @@ public class PaymentService {
             UUID leaderId,
             List<UUID> memberIds
     ) {
+        validateMemberEligibility(
+                eventId,
+                leaderId,
+                memberIds,
+                null
+        );
+    }
 
-        List<Team> existingTeams =
-                teamRepository.findAllByEventId(eventId);
+    private void validateMemberEligibility(
+            UUID eventId,
+            UUID leaderId,
+            List<UUID> memberIds,
+            UUID excludedPaymentId
+    ) {
 
         Set<UUID> registeredUserIds = new HashSet<>();
+
+        // Confirmed teams.
+        List<Team> existingTeams =
+                teamRepository.findAllByEventId(eventId);
 
         for (Team existingTeam : existingTeams) {
 
@@ -484,9 +949,41 @@ public class PaymentService {
             }
         }
 
+        // Other pending manual-payment submissions.
+        List<Payment> pendingPayments =
+                paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
+                        eventId,
+                        "UNVERIFIED"
+                );
+
+        for (Payment pendingPayment : pendingPayments) {
+
+            if (excludedPaymentId != null &&
+                    excludedPaymentId.equals(pendingPayment.getPaymentId())) {
+                continue;
+            }
+
+            paymentMetadataRepository
+                    .findByPaymentId(pendingPayment.getPaymentId())
+                    .ifPresent(metadata -> {
+
+                        if (metadata.getLeaderId() != null) {
+                            registeredUserIds.add(metadata.getLeaderId());
+                        }
+
+                        UUID[] pendingMemberIds = metadata.getMemberIds();
+
+                        if (pendingMemberIds != null) {
+                            for (UUID pendingMemberId : pendingMemberIds) {
+                                registeredUserIds.add(pendingMemberId);
+                            }
+                        }
+                    });
+        }
+
         if (registeredUserIds.contains(leaderId)) {
             throw new RuntimeException(
-                    "You are already registered for this event"
+                    "You or one of the selected participants already has a confirmed or pending registration for this event"
             );
         }
 
@@ -494,7 +991,7 @@ public class PaymentService {
 
             if (registeredUserIds.contains(memberId)) {
                 throw new RuntimeException(
-                        "One or more selected users are already registered"
+                        "One or more selected users already have a confirmed or pending registration for this event"
                 );
             }
         }
@@ -540,14 +1037,11 @@ public class PaymentService {
 
                             try {
 
-                                // Generate an individual PDF using
-                                // this participant's unique QR token.
                                 byte[] pdfBytes =
                                         hallTicketService.generateHallTicket(
                                                 recipient.ticketCode()
                                         );
 
-                                // Send the PDF as an email attachment.
                                 emailService.sendRegistrationConfirmationWithAttachment(
                                         recipient.name(),
                                         recipient.email(),

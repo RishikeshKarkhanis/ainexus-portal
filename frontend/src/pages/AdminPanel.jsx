@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { CalendarDays, ShieldCheck, ClipboardCheck, ClipboardList, FileSpreadsheet, LogOut, Menu, X } from "lucide-react";
+import { CalendarDays, ShieldCheck, ClipboardCheck, ClipboardList, FileSpreadsheet, LogOut, Menu, X, CreditCard } from "lucide-react";
 
 import AttendanceManager from "../components/features/AttendanceManager";
 import Attendance from "../components/features/Attendance";
 import EventManager from "../components/features/EventManager";
 import RegistrationsManager from "../components/features/RegistrationsManager";
 import AdminManager from "../components/features/AdminManager";
+import PaymentVerification from "../components/features/PaymentVerification";
 
 const menuItems = [
   { id: "events", label: "Manage Events", icon: CalendarDays },
   { id: "registrations", label: "Registrations", icon: ClipboardList },
+  { id: "payments", label: "Payment Verification", icon: CreditCard },
   { id: "admins", label: "Manage Admins", icon: ShieldCheck },
   { id: "attendance", label: "Mark Attendance", icon: ClipboardCheck },
   { id: "attendance-records", label: "Attendance Records", icon: FileSpreadsheet },
@@ -46,6 +48,9 @@ function AdminPanel() {
 
       case "attendance-records":
         return <Attendance />;
+
+      case "payments":
+        return <PaymentVerification />;
 
       default:
         return null;

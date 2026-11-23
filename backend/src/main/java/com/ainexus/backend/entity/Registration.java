@@ -35,10 +35,16 @@ public class Registration {
     @Column(name = "transaction_id")
     private String transactionId;
 
+    @Column(name = "payment_status", nullable = false, length = 20)
+    private String paymentStatus;
+
     @PrePersist
     protected void onCreate() {
         if (registrationDate == null) {
             registrationDate = LocalDateTime.now();
+        }
+        if (paymentStatus == null || paymentStatus.isBlank()) {
+            paymentStatus = "UNVERIFIED";
         }
     }
 }

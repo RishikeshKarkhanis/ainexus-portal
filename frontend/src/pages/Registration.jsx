@@ -43,6 +43,7 @@ export default function Registration() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [transactionId, setTransactionId] = useState("");
 
   // Fetch event details
   useEffect(() => {
@@ -140,78 +141,35 @@ export default function Registration() {
     setSelectedMembers((previous) => previous.filter((member) => member.userId !== userId));
   };
 
-  // Initiate Razorpay payment
+  // Submit manual UPI payment for verification
   const handlePayment = async () => {
     if (!canProceedToPayment || paymentLoading) return;
+
+    const utr = transactionId.trim();
+
+    if (utr.length < 3 || utr.length > 100) {
+      setPaymentError("Please enter a valid UPI transaction ID.");
+      return;
+    }
 
     try {
       setPaymentLoading(true);
       setPaymentError("");
 
-      const order = await apiRequest("/api/payments/create-order", {
+      await apiRequest("/api/payments/manual", {
         method: "POST",
         body: JSON.stringify({
           eventId,
           teamName: teamName.trim(),
           memberIds: selectedMembers.map((member) => member.userId),
+          transactionId: utr,
         }),
       });
 
-      if (!window.Razorpay) {
-        throw new Error("Razorpay Checkout failed to load. Please refresh the page.");
-      }
-
-      const options = {
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency,
-        name: "AI Nexus",
-        description: event.eventName,
-        order_id: order.orderId,
-
-        // Verify payment with backend
-        handler: async function (response) {
-          try {
-            setPaymentError("");
-
-            await apiRequest("/api/payments/verify", {
-              method: "POST",
-              body: JSON.stringify({
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              }),
-            });
-
-            // Show success popup only after verification
-            setPaymentSuccess(true);
-          } catch (err) {
-            console.error("Payment verification failed:", err);
-
-            setPaymentError(`Payment received, but verification failed. Please contact the AI Nexus team with Payment ID: ${response.razorpay_payment_id}`);
-          }
-        },
-
-        theme: {
-          color: "#3B82D6",
-        },
-
-        modal: {
-          ondismiss: function () {
-            setPaymentError("Payment window closed.");
-          },
-        },
-      };
-
-      const razorpay = new window.Razorpay(options);
-
-      razorpay.on("payment.failed", function (response) {
-        setPaymentError(response.error?.description || "Payment failed. Please try again.");
-      });
-
-      razorpay.open();
+      // Submission is successful, but payment is not yet verified.
+      setPaymentSuccess(true);
     } catch (err) {
-      setPaymentError(err.message || "Unable to initiate payment.");
+      setPaymentError(err.message || "Unable to submit payment details. Please try again.");
     } finally {
       setPaymentLoading(false);
     }
@@ -659,12 +617,46 @@ export default function Registration() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border border-[#3B82D6]/25 bg-[#3B82D6]/[0.06] p-5">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-[#8B929F]">Amount payable</p>
-                    <p className="mt-1 text-xs text-[#AEBBD0]">Secure checkout powered by Razorpay</p>
+                <div className="space-y-5">
+                  {/* Amount */}
+                  <div className="flex items-center justify-between border border-[#3B82D6]/25 bg-[#3B82D6]/[0.06] p-5">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-[#8B929F]">Amount payable</p>
+                      <p className="mt-1 text-xs text-[#AEBBD0]">Pay using the official college UPI QR</p>
+                    </div>
+
+                    <p className="text-2xl font-medium text-[#E8E5DF]">{event.registrationFee > 0 ? `₹${event.registrationFee}` : "Free"}</p>
                   </div>
-                  <p className="text-2xl font-medium text-[#E8E5DF]">{event.registrationFee > 0 ? `₹${event.registrationFee}` : "Free"}</p>
+
+                  {/* UPI QR */}
+                  {event.registrationFee > 0 && (
+                    <div className="border border-[#3B82D6]/20 bg-[#00001F]/50 p-5 text-center">
+                      <p className="text-sm font-semibold text-[#E8E5DF]">Scan & Pay</p>
+
+                      <p className="mt-2 text-xs text-[#AEBBD0]">Scan this QR code using any UPI application.</p>
+
+                      <div className="mx-auto mt-5 flex w-fit items-center justify-center bg-white p-3">
+                        <img src="/qr/qr.png" alt="Official College UPI QR Code" className="h-56 w-56 object-contain" />
+                      </div>
+
+                      <p className="mt-4 text-sm font-semibold text-[#E8E5DF]">Pay exactly ₹{event.registrationFee}</p>
+
+                      <p className="mt-2 text-xs leading-6 text-[#AEBBD0]">After completing your payment, enter the UPI transaction ID below. Your registration will be confirmed only after verification by the AI Nexus admin team.</p>
+                    </div>
+                  )}
+
+                  {/* UTR input */}
+                  {event.registrationFee > 0 && (
+                    <div>
+                      <label htmlFor="transactionId" className="mb-3 block text-sm font-medium text-[#AEBBD0]">
+                        UPI Transaction ID / UTR
+                      </label>
+
+                      <input id="transactionId" type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} maxLength={100} placeholder="Enter your UPI transaction ID" autoComplete="off" className="w-full border border-[#3B82D6]/20 bg-[#00001F] px-4 py-4 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
+
+                      <p className="mt-2 text-xs leading-5 text-[#8B929F]">You can find this ID in your UPI app's payment history. Please double-check it before submitting.</p>
+                    </div>
+                  )}
                 </div>
 
                 {paymentError && (
@@ -684,16 +676,16 @@ export default function Registration() {
                     className="flex-1 border border-[#3B82D6]/30 px-6 py-4 text-sm font-semibold text-[#AEBBD0] transition hover:border-[#3B82D6] hover:text-[#E8E5DF] disabled:opacity-50">
                     Edit Team
                   </button>
-                  <button type="button" onClick={handlePayment} disabled={!canProceedToPayment || paymentLoading} className="flex-1 inline-flex items-center justify-center gap-2 bg-[#1E4F9A] px-6 py-4 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-[#AEBBD0]">
+                  <button type="button" onClick={handlePayment} disabled={!canProceedToPayment || paymentLoading || (event.registrationFee > 0 && !transactionId.trim())} className="flex-1 inline-flex items-center justify-center gap-2 bg-[#1E4F9A] px-6 py-4 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-[#AEBBD0]">
                     {paymentLoading ? (
                       <>
                         <LoaderCircle size={18} className="animate-spin" />
-                        Preparing Payment...
+                        Submitting Details...
                       </>
                     ) : (
                       <>
-                        <IndianRupee size={18} />
-                        Pay & Complete Registration
+                        <Check size={18} />
+                        Submit Payment Details
                       </>
                     )}
                   </button>
@@ -714,10 +706,10 @@ export default function Registration() {
             </div>
 
             <h2 id="payment-success-title" className="mt-6 text-2xl font-bold text-[#E8E5DF]">
-              Registration Successful!
+              Payment Submitted!
             </h2>
 
-            <p className="mt-3 text-sm leading-6 text-[#AEBBD0]">Your payment has been verified and your team has been successfully registered. Your tickets and confirmation details are on their way!</p>
+            <p className="mt-3 text-sm leading-6 text-[#AEBBD0]">Your UPI payment details have been submitted successfully. Your registration is currently pending verification by the AI Nexus admin team. You will receive your confirmation and tickets once the payment is verified.</p>
 
             <button type="button" onClick={() => navigate("/profile")} className="mt-7 w-full rounded-none bg-[#1E4F9A] px-6 py-4 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6]">
               Go to Profile

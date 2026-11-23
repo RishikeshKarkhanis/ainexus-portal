@@ -2,6 +2,7 @@ package com.ainexus.backend.controller;
 
 import com.ainexus.backend.dto.request.CreatePaymentOrderRequest;
 import com.ainexus.backend.dto.request.VerifyPaymentRequest;
+import com.ainexus.backend.dto.request.SubmitManualPaymentRequest;
 
 import com.ainexus.backend.entity.Payment;
 import com.ainexus.backend.entity.Registration;
@@ -19,13 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import jakarta.validation.Valid;
-import com.razorpay.RazorpayException;
-
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
@@ -40,7 +34,7 @@ public class PaymentController {
     }
 
     // ==========================================
-    // CREATE RAZORPAY ORDER
+    // CREATE RAZORPAY ORDER (LEGACY)
     // ==========================================
 
     @PostMapping("/create-order")
@@ -49,7 +43,6 @@ public class PaymentController {
             Authentication authentication
     ) {
         try {
-
             Payment payment = paymentService.createOrder(
                     request,
                     authentication
@@ -66,34 +59,32 @@ public class PaymentController {
             );
 
         } catch (IllegalArgumentException e) {
-
             return ResponseEntity.badRequest().body(
                     Map.of("message", "Invalid request: " + e.getMessage())
             );
 
         } catch (RazorpayException e) {
-
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(
                     Map.of("message", "Unable to create Razorpay order")
             );
 
         } catch (RuntimeException e) {
-
             return ResponseEntity.badRequest().body(
                     Map.of("message", e.getMessage())
             );
         }
     }
 
-
     // ==========================================
-    // VERIFY RAZORPAY PAYMENT
+    // VERIFY RAZORPAY PAYMENT (LEGACY)
     // ==========================================
 
     @PostMapping("/verify")
-    public ResponseEntity<?> verifyPayment(@Valid @RequestBody VerifyPaymentRequest request, Authentication authentication) {
+    public ResponseEntity<?> verifyPayment(
+            @Valid @RequestBody VerifyPaymentRequest request,
+            Authentication authentication
+    ) {
         try {
-
             Registration registration =
                     paymentService.verifyPayment(request, authentication);
 
@@ -108,19 +99,50 @@ public class PaymentController {
             );
 
         } catch (RazorpayException e) {
-
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(
                     Map.of("message", "Unable to verify payment with Razorpay")
             );
 
         } catch (IllegalArgumentException e) {
-
             return ResponseEntity.badRequest().body(
                     Map.of("message", e.getMessage())
             );
 
         } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", e.getMessage())
+            );
+        }
+    }
 
+    // ==========================================
+    // SUBMIT MANUAL UPI PAYMENT
+    // ==========================================
+
+    @PostMapping("/manual")
+    public ResponseEntity<?> submitManualPayment(
+            @Valid @RequestBody SubmitManualPaymentRequest request,
+            Authentication authentication
+    ) {
+        try {
+            Registration registration =
+                    paymentService.submitManualPayment(request, authentication);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(
+                    Map.of(
+                            "success", true,
+                            "message", "Payment details submitted. Awaiting admin verification.",
+                            "registrationId", registration.getRegistrationId(),
+                            "paymentStatus", registration.getPaymentStatus()
+                    )
+            );
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(
+                    Map.of("message", e.getMessage())
+            );
+
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(
                     Map.of("message", e.getMessage())
             );
