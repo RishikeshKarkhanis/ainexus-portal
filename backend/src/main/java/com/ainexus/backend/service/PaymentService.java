@@ -1,8 +1,6 @@
 
 package com.ainexus.backend.service;
 
-import com.ainexus.backend.dto.request.CreatePaymentOrderRequest;
-import com.ainexus.backend.dto.request.VerifyPaymentRequest;
 import com.ainexus.backend.dto.request.SubmitManualPaymentRequest;
 import com.ainexus.backend.dto.response.PaymentVerificationResponse;
 
@@ -24,24 +22,15 @@ import com.ainexus.backend.repository.TeamMemberRepository;
 import com.ainexus.backend.repository.TicketRepository;
 import com.ainexus.backend.repository.UserRepository;
 
-import com.razorpay.Order;
-import com.razorpay.RazorpayClient;
-import com.razorpay.RazorpayException;
 
-import org.json.JSONObject;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -57,7 +46,6 @@ public class PaymentService {
     private static final Logger LOGGER =
             Logger.getLogger(PaymentService.class.getName());
 
-    private final RazorpayClient razorpayClient;
     private final EventRepository eventRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentMetadataRepository paymentMetadataRepository;
@@ -69,11 +57,8 @@ public class PaymentService {
     private final EmailService emailService;
     private final HallTicketService hallTicketService;
 
-    @Value("${razorpay.key.secret}")
-    private String razorpayKeySecret;
 
     public PaymentService(
-            RazorpayClient razorpayClient,
             EventRepository eventRepository,
             PaymentRepository paymentRepository,
             PaymentMetadataRepository paymentMetadataRepository,
@@ -85,7 +70,6 @@ public class PaymentService {
             EmailService emailService,
             HallTicketService hallTicketService
     ) {
-        this.razorpayClient = razorpayClient;
         this.eventRepository = eventRepository;
         this.paymentRepository = paymentRepository;
         this.paymentMetadataRepository = paymentMetadataRepository;
@@ -564,348 +548,6 @@ public class PaymentService {
     }
 
     // ==========================================
-    // 5. CREATE RAZORPAY ORDER
-    // ==========================================
-
-    @Transactional
-    public Payment createOrder(
-            CreatePaymentOrderRequest request,
-            Authentication authentication
-    ) throws RazorpayException {
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("Authentication required");
-        }
-
-        UUID eventId = UUID.fromString(request.eventId());
-
-        User leader = userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        UUID leaderId = leader.getUserId();
-
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found"));
-
-        if (!"OPEN".equalsIgnoreCase(event.getRegistrationStatus())) {
-            throw new RuntimeException("Event registration is closed");
-        }
-
-        if (event.getRegistrationFee() == null ||
-                event.getRegistrationFee() <= 0) {
-            throw new RuntimeException("Invalid registration fee");
-        }
-
-        String teamName = request.teamName().trim();
-
-        if (teamName.length() < 3 || teamName.length() > 120) {
-            throw new RuntimeException(
-                    "Team name must be between 3 and 120 characters"
-            );
-        }
-
-        List<UUID> memberIds = request.memberIds();
-
-        if (memberIds == null) {
-            throw new RuntimeException("Team members are required");
-        }
-
-        Set<UUID> uniqueMemberIds = new HashSet<>(memberIds);
-
-        if (uniqueMemberIds.size() != memberIds.size()) {
-            throw new RuntimeException("Duplicate members are not allowed");
-        }
-
-        if (uniqueMemberIds.contains(leaderId)) {
-            throw new RuntimeException(
-                    "Team leader cannot be selected again"
-            );
-        }
-
-        int totalTeamSize = memberIds.size() + 1;
-
-        if (totalTeamSize < event.getMinTeamSize() ||
-                totalTeamSize > event.getMaxTeamSize()) {
-            throw new RuntimeException("Invalid team size");
-        }
-
-        List<User> selectedUsers = userRepository.findAllById(memberIds);
-
-        if (selectedUsers.size() != memberIds.size()) {
-            throw new RuntimeException(
-                    "One or more selected users do not exist"
-            );
-        }
-
-        validateMemberEligibility(eventId, leaderId, memberIds);
-
-        long amountInPaise = Math.multiplyExact(
-                event.getRegistrationFee().longValue(),
-                100L
-        );
-
-        String receipt = "evt_" + UUID.randomUUID()
-                .toString()
-                .replace("-", "")
-                .substring(0, 20);
-
-        JSONObject orderRequest = new JSONObject();
-        orderRequest.put("amount", amountInPaise);
-        orderRequest.put("currency", "INR");
-        orderRequest.put("receipt", receipt);
-
-        Order order = razorpayClient.orders.create(orderRequest);
-
-        Payment payment = new Payment();
-
-        payment.setEventId(eventId);
-        payment.setPaymentStatus("CREATED");
-        payment.setTransId(order.get("id"));
-        payment.setRazorpayOrderId(order.get("id"));
-        payment.setAmount(amountInPaise);
-        payment.setCurrency("INR");
-
-        payment = paymentRepository.save(payment);
-
-        PaymentMetadata metadata = new PaymentMetadata();
-
-        metadata.setPaymentId(payment.getPaymentId());
-        metadata.setLeaderId(leaderId);
-        metadata.setTeamName(teamName);
-        metadata.setMemberIds(memberIds.toArray(new UUID[0]));
-
-        paymentMetadataRepository.save(metadata);
-
-        return payment;
-    }
-
-    // ==========================================
-    // 6. VERIFY RAZORPAY PAYMENT
-    // ==========================================
-
-    @Transactional
-    public Registration verifyPayment(
-            VerifyPaymentRequest request,
-            Authentication authentication
-    ) throws RazorpayException {
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("Authentication required");
-        }
-
-        Payment payment = paymentRepository
-                .findByRazorpayOrderId(request.razorpayOrderId())
-                .orElseThrow(() -> new RuntimeException(
-                        "Payment order not found"
-                ));
-
-        // Verify Razorpay signature.
-        String generatedSignature = generateSignature(
-                request.razorpayOrderId(),
-                request.razorpayPaymentId()
-        );
-
-        boolean signatureValid = MessageDigest.isEqual(
-                generatedSignature.getBytes(StandardCharsets.UTF_8),
-                request.razorpaySignature().getBytes(StandardCharsets.UTF_8)
-        );
-
-        if (!signatureValid) {
-            throw new RuntimeException("Invalid payment signature");
-        }
-
-        PaymentMetadata metadata = paymentMetadataRepository
-                .findByPaymentId(payment.getPaymentId())
-                .orElseThrow(() -> new RuntimeException(
-                        "Payment metadata not found"
-                ));
-
-        // Only the leader who created this order can verify it.
-        User authenticatedUser = userRepository
-                .findByEmail(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        if (!authenticatedUser.getUserId().equals(metadata.getLeaderId())) {
-            throw new RuntimeException(
-                    "You are not authorized to verify this payment"
-            );
-        }
-
-        // Idempotency.
-        if ("VERIFIED".equalsIgnoreCase(payment.getPaymentStatus())) {
-
-            if (payment.getRegistrationId() == null) {
-                throw new RuntimeException(
-                        "Verified payment has no registration"
-                );
-            }
-
-            return registrationRepository
-                    .findById(payment.getRegistrationId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "Registration not found"
-                    ));
-        }
-
-        if (!"CREATED".equalsIgnoreCase(payment.getPaymentStatus())) {
-            throw new RuntimeException("Payment cannot be verified");
-        }
-
-        // Fetch payment directly from Razorpay.
-        com.razorpay.Payment razorpayPayment =
-                razorpayClient.payments.fetch(
-                        request.razorpayPaymentId()
-                );
-
-        // Verify order association.
-        String razorpayOrderId = razorpayPayment.get("order_id");
-
-        if (!request.razorpayOrderId().equals(razorpayOrderId)) {
-            throw new RuntimeException(
-                    "Payment does not belong to this order"
-            );
-        }
-
-        // Verify captured status.
-        String razorpayStatus = razorpayPayment.get("status");
-
-        if (!"captured".equalsIgnoreCase(razorpayStatus)) {
-            throw new RuntimeException(
-                    "Payment has not been captured"
-            );
-        }
-
-        // Verify amount.
-        Number paidAmount = (Number) razorpayPayment.get("amount");
-
-        if (paidAmount == null ||
-                paidAmount.longValue() != payment.getAmount()) {
-            throw new RuntimeException("Payment amount mismatch");
-        }
-
-        // Verify currency.
-        String paidCurrency = razorpayPayment.get("currency");
-
-        if (!payment.getCurrency().equals(paidCurrency)) {
-            throw new RuntimeException("Payment currency mismatch");
-        }
-
-        UUID eventId = payment.getEventId();
-        UUID leaderId = metadata.getLeaderId();
-
-        UUID[] memberArray = metadata.getMemberIds();
-
-        if (memberArray == null) {
-            throw new RuntimeException("Team member information missing");
-        }
-
-        List<UUID> memberIds = List.of(memberArray);
-
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new RuntimeException("Event not found"));
-
-        int totalTeamSize = memberIds.size() + 1;
-
-        if (totalTeamSize < event.getMinTeamSize() ||
-                totalTeamSize > event.getMaxTeamSize()) {
-            throw new RuntimeException("Invalid team size");
-        }
-
-        validateMemberEligibility(eventId, leaderId, memberIds);
-
-        User leader = userRepository.findById(leaderId)
-                .orElseThrow(() -> new RuntimeException(
-                        "Team leader not found"
-                ));
-
-        List<User> selectedUsers = userRepository.findAllById(memberIds);
-
-        if (selectedUsers.size() != memberIds.size()) {
-            throw new RuntimeException(
-                    "One or more team members no longer exist"
-            );
-        }
-
-        // Create team.
-        Team team = new Team();
-
-        team.setTeamName(metadata.getTeamName());
-        team.setEventId(eventId);
-        team.setLeaderId(leaderId);
-
-        team = teamRepository.save(team);
-
-        List<RegistrationEmail> registrationEmails = new ArrayList<>();
-
-        // Add leader.
-        TeamMember leaderMember = new TeamMember();
-
-        leaderMember.setTeamId(team.getTeamId());
-        leaderMember.setUserId(leader.getUserId());
-
-        leaderMember = teamMemberRepository.save(leaderMember);
-
-        Ticket leaderTicket = createTicket(leaderMember);
-
-        registrationEmails.add(
-                new RegistrationEmail(
-                        leader.getName(),
-                        leader.getEmail(),
-                        leaderTicket.getQrToken()
-                )
-        );
-
-        // Add selected teammates.
-        for (User user : selectedUsers) {
-
-            TeamMember teamMember = new TeamMember();
-
-            teamMember.setTeamId(team.getTeamId());
-            teamMember.setUserId(user.getUserId());
-
-            teamMember = teamMemberRepository.save(teamMember);
-
-            Ticket ticket = createTicket(teamMember);
-
-            registrationEmails.add(
-                    new RegistrationEmail(
-                            user.getName(),
-                            user.getEmail(),
-                            ticket.getQrToken()
-                    )
-            );
-        }
-
-        // Create registration.
-        Registration registration = new Registration();
-
-        registration.setEventId(eventId);
-        registration.setTeamId(team.getTeamId());
-        registration.setTeamName(metadata.getTeamName());
-        registration.setTransactionId(request.razorpayPaymentId());
-
-        registration = registrationRepository.save(registration);
-
-        // Update payment.
-        payment.setPaymentStatus("VERIFIED");
-        payment.setRazorpayPaymentId(request.razorpayPaymentId());
-        payment.setTransId(request.razorpayPaymentId());
-        payment.setTeamId(team.getTeamId());
-        payment.setRegistrationId(registration.getRegistrationId());
-        payment.setVerifiedAt(OffsetDateTime.now());
-
-        paymentRepository.save(payment);
-
-        scheduleRegistrationEmails(
-                registrationEmails,
-                event,
-                metadata.getTeamName()
-        );
-
-        return registration;
-    }
-
-    // ==========================================
     // 7. CHECK MEMBER ELIGIBILITY
     // ==========================================
 
@@ -1073,40 +715,4 @@ public class PaymentService {
             String ticketCode
     ) {}
 
-    // ==========================================
-    // 10. GENERATE RAZORPAY HMAC SIGNATURE
-    // ==========================================
-
-    private String generateSignature(
-            String orderId,
-            String paymentId
-    ) {
-
-        try {
-
-            String payload = orderId + "|" + paymentId;
-
-            Mac mac = Mac.getInstance("HmacSHA256");
-
-            SecretKeySpec secretKey = new SecretKeySpec(
-                    razorpayKeySecret.getBytes(StandardCharsets.UTF_8),
-                    "HmacSHA256"
-            );
-
-            mac.init(secretKey);
-
-            byte[] hash = mac.doFinal(
-                    payload.getBytes(StandardCharsets.UTF_8)
-            );
-
-            return java.util.HexFormat.of().formatHex(hash);
-
-        } catch (Exception exception) {
-
-            throw new RuntimeException(
-                    "Unable to verify payment signature",
-                    exception
-            );
-        }
-    }
 }

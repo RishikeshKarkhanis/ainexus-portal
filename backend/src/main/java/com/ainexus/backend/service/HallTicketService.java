@@ -112,7 +112,7 @@ public class HallTicketService {
                 content.fill();
 
                 addText(content, bold, 23, Color.WHITE,
-                        45, 790, "AI NEXUS");
+                        45, 790, "AI NEXUS CLUB");
 
                 addText(content, regular, 11, Color.WHITE,
                         45, 768, "ACROPOLIS INSTITUTE OF TECHNOLOGY AND RESEARCH");

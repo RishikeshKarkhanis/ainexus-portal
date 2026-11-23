@@ -39,12 +39,6 @@ public class Payment {
     @Column(name = "event_id")
     private UUID eventId;
 
-    @Column(name = "razorpay_order_id")
-    private String razorpayOrderId;
-
-    @Column(name = "razorpay_payment_id")
-    private String razorpayPaymentId;
-
     @Column(name = "amount")
     private Long amount;
 
