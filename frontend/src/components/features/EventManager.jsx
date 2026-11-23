@@ -8,6 +8,8 @@ const emptyForm = {
   description: "",
   eventDate: "",
   registrationFee: 0,
+  minTeamSize: 1,
+  maxTeamSize: 4,
   collegeOnly: false,
   registrationStatus: "DRAFT",
 };
@@ -98,6 +100,8 @@ function EventManager() {
         description: draft.description ?? "",
         eventDate: draft.eventDate ?? "",
         registrationFee: draft.registrationFee ?? 0,
+        minTeamSize: draft.minTeamSize ?? 1,
+        maxTeamSize: draft.maxTeamSize ?? 4,
         collegeOnly: draft.collegeOnly ?? true,
         registrationStatus: draft.registrationStatus ?? "DRAFT",
       });
@@ -122,6 +126,8 @@ function EventManager() {
       description: event.description ?? "",
       eventDate: event.eventDate ?? "",
       registrationFee: event.registrationFee ?? 0,
+      minTeamSize: event.minTeamSize ?? 1,
+      maxTeamSize: event.maxTeamSize ?? 4,
       collegeOnly: event.collegeOnly ?? false,
       registrationStatus: event.registrationStatus ?? "OPEN",
     });
@@ -206,9 +212,29 @@ function EventManager() {
       return;
     }
 
+    const minTeamSize = Number(form.minTeamSize);
+    const maxTeamSize = Number(form.maxTeamSize);
+
+    if (
+      !Number.isInteger(minTeamSize) ||
+      !Number.isInteger(maxTeamSize) ||
+      minTeamSize < 1 ||
+      maxTeamSize < 1
+    ) {
+      setError("Team sizes must be whole numbers of at least 1.");
+      return;
+    }
+
+    if (minTeamSize > maxTeamSize) {
+      setError("Minimum team size cannot be greater than maximum team size.");
+      return;
+    }
+
     const payload = {
       ...form,
       registrationFee: Number(form.registrationFee),
+      minTeamSize,
+      maxTeamSize,
       registrationStatus: form.registrationStatus.toUpperCase(),
     };
 
@@ -332,6 +358,9 @@ function EventManager() {
                   </span>
 
                   <span>{event.collegeOnly ? "Acropolis only" : "Open to all"}</span>
+                  <span>
+                    Team size: {event.minTeamSize ?? 1}–{event.maxTeamSize ?? 4}
+                  </span>
                 </div>
               </div>
 
@@ -393,6 +422,41 @@ function EventManager() {
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-700">Registration Fee (₹)</label>
                   <input type="number" name="registrationFee" value={form.registrationFee} onChange={handleFormChange} min="0" step="1" className={inputClass} required />
+                </div>
+              </div>
+
+              {/* Team Size */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                    Minimum Team Size
+                  </label>
+                  <input
+                    type="number"
+                    name="minTeamSize"
+                    value={form.minTeamSize}
+                    onChange={handleFormChange}
+                    min="1"
+                    step="1"
+                    className={inputClass}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                    Maximum Team Size
+                  </label>
+                  <input
+                    type="number"
+                    name="maxTeamSize"
+                    value={form.maxTeamSize}
+                    onChange={handleFormChange}
+                    min={form.minTeamSize || 1}
+                    step="1"
+                    className={inputClass}
+                    required
+                  />
                 </div>
               </div>
 

@@ -141,13 +141,15 @@ export default function Registration() {
     setSelectedMembers((previous) => previous.filter((member) => member.userId !== userId));
   };
 
-  // Submit manual UPI payment for verification
+  // Submit either a free registration or a paid manual UPI payment.
   const handlePayment = async () => {
     if (!canProceedToPayment || paymentLoading) return;
 
+    const isFreeEvent = Number(event?.registrationFee ?? 0) <= 0;
     const utr = transactionId.trim();
 
-    if (utr.length < 3 || utr.length > 100) {
+    // UTR is required only for paid events.
+    if (!isFreeEvent && (utr.length < 3 || utr.length > 100)) {
       setPaymentError("Please enter a valid UPI transaction ID.");
       return;
     }
@@ -156,20 +158,32 @@ export default function Registration() {
       setPaymentLoading(true);
       setPaymentError("");
 
-      await apiRequest("/api/payments/manual", {
-        method: "POST",
-        body: JSON.stringify({
-          eventId,
-          teamName: teamName.trim(),
-          memberIds: selectedMembers.map((member) => member.userId),
-          transactionId: utr,
-        }),
-      });
+      const payload = {
+        eventId,
+        teamName: teamName.trim(),
+        memberIds: selectedMembers.map((member) => member.userId),
+      };
 
-      // Submission is successful, but payment is not yet verified.
+      if (isFreeEvent) {
+        // Free registrations are confirmed directly by the backend.
+        await apiRequest("/api/payments/free-registration", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // Paid registrations remain pending until an admin verifies the UTR.
+        await apiRequest("/api/payments/manual", {
+          method: "POST",
+          body: JSON.stringify({
+            ...payload,
+            transactionId: utr,
+          }),
+        });
+      }
+
       setPaymentSuccess(true);
     } catch (err) {
-      setPaymentError(err.message || "Unable to submit payment details. Please try again.");
+      setPaymentError(err.message || (isFreeEvent ? "Unable to complete your registration. Please try again." : "Unable to submit payment details. Please try again."));
     } finally {
       setPaymentLoading(false);
     }
@@ -572,7 +586,7 @@ export default function Registration() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3B82D6]">STEP 03 · FINAL REVIEW</p>
                   <h2 className="mt-2 text-2xl font-medium text-[#E8E5DF]">Review your registration.</h2>
-                  <p className="mt-2 text-sm leading-7 text-[#AEBBD0]">Make sure your event and team details are correct before proceeding to secure payment.</p>
+                  <p className="mt-2 text-sm leading-7 text-[#AEBBD0]">{Number(event.registrationFee ?? 0) > 0 ? "Make sure your event and team details are correct before proceeding to payment." : "Review your event and team details before completing your free registration."}</p>
                 </div>
 
                 <div className="border border-[#3B82D6]/20 bg-[#00001F]/50 p-5">
@@ -622,7 +636,7 @@ export default function Registration() {
                   <div className="flex items-center justify-between border border-[#3B82D6]/25 bg-[#3B82D6]/[0.06] p-5">
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-[#8B929F]">Amount payable</p>
-                      <p className="mt-1 text-xs text-[#AEBBD0]">Pay using the official college UPI QR</p>
+                      <p className="mt-1 text-xs text-[#AEBBD0]">{Number(event.registrationFee ?? 0) > 0 ? "Pay using the official college UPI QR" : "No payment is required for this event."}</p>
                     </div>
 
                     <p className="text-2xl font-medium text-[#E8E5DF]">{event.registrationFee > 0 ? `₹${event.registrationFee}` : "Free"}</p>
@@ -685,12 +699,12 @@ export default function Registration() {
                     ) : (
                       <>
                         <Check size={18} />
-                        Submit Payment Details
+                        {Number(event.registrationFee ?? 0) > 0 ? "Submit Payment Details" : "Complete Free Registration"}
                       </>
                     )}
                   </button>
                 </div>
-                <p className="text-center text-xs text-[#8B929F]">Your team will only be registered after successful payment verification.</p>
+                <p className="text-center text-xs text-[#8B929F]">{Number(event.registrationFee ?? 0) > 0 ? "Your team will be registered after successful payment verification." : "Your team will be registered immediately after you submit these details."}</p>
               </section>
             )}
           </div>
@@ -706,10 +720,10 @@ export default function Registration() {
             </div>
 
             <h2 id="payment-success-title" className="mt-6 text-2xl font-bold text-[#E8E5DF]">
-              Payment Submitted!
+              {Number(event.registrationFee ?? 0) > 0 ? "Payment Submitted!" : "Registration Confirmed!"}
             </h2>
 
-            <p className="mt-3 text-sm leading-6 text-[#AEBBD0]">Your UPI payment details have been submitted successfully. Your registration is currently pending verification by the AI Nexus admin team. You will receive your confirmation and tickets once the payment is verified.</p>
+            <p className="mt-3 text-sm leading-6 text-[#AEBBD0]">{Number(event.registrationFee ?? 0) > 0 ? "Your UPI payment details have been submitted successfully. Your registration is pending verification by the AI Nexus admin team. You will receive your confirmation and tickets once the payment is verified." : "Your free event registration has been completed successfully. Your team is registered, and confirmation emails with hall tickets will be sent to the team members."}</p>
 
             <button type="button" onClick={() => navigate("/profile")} className="mt-7 w-full rounded-none bg-[#1E4F9A] px-6 py-4 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6]">
               Go to Profile

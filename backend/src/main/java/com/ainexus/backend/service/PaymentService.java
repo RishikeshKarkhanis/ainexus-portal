@@ -1,35 +1,4 @@
-
 package com.ainexus.backend.service;
-
-import com.ainexus.backend.dto.request.SubmitManualPaymentRequest;
-import com.ainexus.backend.dto.response.PaymentVerificationResponse;
-
-import com.ainexus.backend.entity.Event;
-import com.ainexus.backend.entity.Payment;
-import com.ainexus.backend.entity.PaymentMetadata;
-import com.ainexus.backend.entity.Registration;
-import com.ainexus.backend.entity.Team;
-import com.ainexus.backend.entity.TeamMember;
-import com.ainexus.backend.entity.Ticket;
-import com.ainexus.backend.entity.User;
-
-import com.ainexus.backend.repository.EventRepository;
-import com.ainexus.backend.repository.PaymentRepository;
-import com.ainexus.backend.repository.PaymentMetadataRepository;
-import com.ainexus.backend.repository.RegistrationRepository;
-import com.ainexus.backend.repository.TeamRepository;
-import com.ainexus.backend.repository.TeamMemberRepository;
-import com.ainexus.backend.repository.TicketRepository;
-import com.ainexus.backend.repository.UserRepository;
-
-
-
-import org.springframework.security.core.Authentication;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -40,11 +9,36 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import com.ainexus.backend.dto.request.SubmitManualPaymentRequest;
+import com.ainexus.backend.dto.response.PaymentVerificationResponse;
+import com.ainexus.backend.entity.Event;
+import com.ainexus.backend.entity.Payment;
+import com.ainexus.backend.entity.PaymentMetadata;
+import com.ainexus.backend.entity.Registration;
+import com.ainexus.backend.entity.Team;
+import com.ainexus.backend.entity.TeamMember;
+import com.ainexus.backend.entity.Ticket;
+import com.ainexus.backend.entity.User;
+import com.ainexus.backend.repository.EventRepository;
+import com.ainexus.backend.repository.PaymentMetadataRepository;
+import com.ainexus.backend.repository.PaymentRepository;
+import com.ainexus.backend.repository.RegistrationRepository;
+import com.ainexus.backend.repository.TeamMemberRepository;
+import com.ainexus.backend.repository.TeamRepository;
+import com.ainexus.backend.repository.TicketRepository;
+import com.ainexus.backend.repository.UserRepository;
+
 @Service
 public class PaymentService {
 
-    private static final Logger LOGGER =
-            Logger.getLogger(PaymentService.class.getName());
+    private static final Logger LOGGER
+            = Logger.getLogger(PaymentService.class.getName());
 
     private final EventRepository eventRepository;
     private final PaymentRepository paymentRepository;
@@ -56,7 +50,6 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final HallTicketService hallTicketService;
-
 
     public PaymentService(
             EventRepository eventRepository,
@@ -85,7 +78,6 @@ public class PaymentService {
     // ==========================================
     // 1. SUBMIT MANUAL UPI PAYMENT
     // ==========================================
-
     @Transactional
     public Registration submitManualPayment(
             SubmitManualPaymentRequest request,
@@ -108,8 +100,8 @@ public class PaymentService {
             throw new RuntimeException("Event registration is closed");
         }
 
-        if (event.getRegistrationFee() == null ||
-                event.getRegistrationFee() <= 0) {
+        if (event.getRegistrationFee() == null
+                || event.getRegistrationFee() <= 0) {
             throw new RuntimeException("Invalid registration fee");
         }
 
@@ -125,8 +117,8 @@ public class PaymentService {
         String transactionId = request.transactionId() == null
                 ? ""
                 : request.transactionId()
-                .trim()
-                .toUpperCase(java.util.Locale.ROOT);
+                        .trim()
+                        .toUpperCase(java.util.Locale.ROOT);
 
         if (transactionId.isBlank() || transactionId.length() > 100) {
             throw new RuntimeException(
@@ -160,8 +152,8 @@ public class PaymentService {
 
         int totalTeamSize = memberIds.size() + 1;
 
-        if (totalTeamSize < event.getMinTeamSize() ||
-                totalTeamSize > event.getMaxTeamSize()) {
+        if (totalTeamSize < event.getMinTeamSize()
+                || totalTeamSize > event.getMaxTeamSize()) {
             throw new RuntimeException("Invalid team size");
         }
 
@@ -210,9 +202,135 @@ public class PaymentService {
     }
 
     // ==========================================
+    // COMPLETE FREE EVENT REGISTRATION
+    // ==========================================
+    @Transactional
+    public Registration registerFreeEvent(
+            com.ainexus.backend.dto.request.FreeRegistrationRequest request,
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Authentication required");
+        }
+
+        User leader = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UUID eventId = request.eventId();
+        UUID leaderId = leader.getUserId();
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        if (!"OPEN".equalsIgnoreCase(event.getRegistrationStatus())) {
+            throw new RuntimeException("Event registration is closed");
+        }
+
+        // Prevent this endpoint from bypassing payment for paid events.
+        if (event.getRegistrationFee() == null || event.getRegistrationFee() != 0) {
+            throw new RuntimeException("This event requires payment");
+        }
+
+        String teamName = request.teamName() == null
+                ? "" : request.teamName().trim();
+
+        if (teamName.length() < 3 || teamName.length() > 120) {
+            throw new RuntimeException(
+                    "Team name must be between 3 and 120 characters"
+            );
+        }
+
+        List<UUID> memberIds = request.memberIds();
+
+        if (memberIds == null) {
+            throw new RuntimeException("Team members are required");
+        }
+
+        Set<UUID> uniqueMemberIds = new HashSet<>(memberIds);
+
+        if (uniqueMemberIds.size() != memberIds.size()) {
+            throw new RuntimeException("Duplicate members are not allowed");
+        }
+
+        if (uniqueMemberIds.contains(leaderId)) {
+            throw new RuntimeException("Team leader cannot be selected again");
+        }
+
+        int totalTeamSize = memberIds.size() + 1;
+
+        if (totalTeamSize < event.getMinTeamSize()
+                || totalTeamSize > event.getMaxTeamSize()) {
+            throw new RuntimeException("Invalid team size");
+        }
+
+        List<User> selectedUsers = userRepository.findAllById(memberIds);
+
+        if (selectedUsers.size() != memberIds.size()) {
+            throw new RuntimeException(
+                    "One or more selected users do not exist"
+            );
+        }
+
+        // Reuse the same eligibility checks as paid registrations.
+        validateMemberEligibility(eventId, leaderId, memberIds);
+
+        // Create the team.
+        Team team = new Team();
+        team.setTeamName(teamName);
+        team.setEventId(eventId);
+        team.setLeaderId(leaderId);
+        team = teamRepository.save(team);
+
+        List<RegistrationEmail> registrationEmails = new ArrayList<>();
+
+        // Add the team leader and generate their ticket.
+        TeamMember leaderMember = new TeamMember();
+        leaderMember.setTeamId(team.getTeamId());
+        leaderMember.setUserId(leaderId);
+        leaderMember = teamMemberRepository.save(leaderMember);
+
+        Ticket leaderTicket = createTicket(leaderMember);
+
+        registrationEmails.add(new RegistrationEmail(
+                leader.getName(),
+                leader.getEmail(),
+                leaderTicket.getQrToken()
+        ));
+
+        // Add teammates and generate individual tickets.
+        for (User user : selectedUsers) {
+            TeamMember teamMember = new TeamMember();
+            teamMember.setTeamId(team.getTeamId());
+            teamMember.setUserId(user.getUserId());
+            teamMember = teamMemberRepository.save(teamMember);
+
+            Ticket ticket = createTicket(teamMember);
+
+            registrationEmails.add(new RegistrationEmail(
+                    user.getName(),
+                    user.getEmail(),
+                    ticket.getQrToken()
+            ));
+        }
+
+        // No Payment row is created because payments.trans_id is non-nullable.
+        Registration registration = new Registration();
+        registration.setEventId(eventId);
+        registration.setTeamId(team.getTeamId());
+        registration.setTeamName(teamName);
+        registration.setTransactionId(null);
+        registration.setPaymentStatus("VERIFIED");
+        registration = registrationRepository.save(registration);
+
+        // Send confirmation emails and hall tickets only after commit.
+        scheduleRegistrationEmails(registrationEmails, event, teamName);
+
+        return registration;
+    }
+
+    // ==========================================
     // 2. ADMIN: FETCH PENDING MANUAL PAYMENTS
     // ==========================================
-
     @Transactional(readOnly = true)
     public List<Payment> getPendingManualPayments(UUID eventId) {
 
@@ -226,7 +344,6 @@ public class PaymentService {
         );
     }
 
-
     @Transactional(readOnly = true)
     public List<PaymentVerificationResponse> getPendingManualPaymentDetails(
             UUID eventId
@@ -239,8 +356,8 @@ public class PaymentService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Event not found"));
 
-        List<Payment> pendingPayments =
-                paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
+        List<Payment> pendingPayments
+                = paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
                         eventId,
                         "UNVERIFIED"
                 );
@@ -253,7 +370,7 @@ public class PaymentService {
                     .findByPaymentId(payment.getPaymentId())
                     .orElseThrow(() -> new RuntimeException(
                             "Payment metadata not found for payment: "
-                                    + payment.getPaymentId()
+                            + payment.getPaymentId()
                     ));
 
             User leader = userRepository.findById(metadata.getLeaderId())
@@ -267,10 +384,10 @@ public class PaymentService {
                     ? List.of()
                     : userRepository.findAllById(List.of(memberIds));
 
-            List<PaymentVerificationResponse.MemberInfo> members =
-                    users.stream()
-                            .map(user ->
-                                    new PaymentVerificationResponse.MemberInfo(
+            List<PaymentVerificationResponse.MemberInfo> members
+                    = users.stream()
+                            .map(user
+                                    -> new PaymentVerificationResponse.MemberInfo(
                                             user.getUserId(),
                                             user.getName(),
                                             user.getEmail()
@@ -306,11 +423,9 @@ public class PaymentService {
         return responses;
     }
 
-
     // ==========================================
     // 3. ADMIN: VERIFY MANUAL UPI PAYMENT
     // ==========================================
-
     @Transactional
     public Registration verifyManualPayment(UUID paymentId) {
 
@@ -338,8 +453,8 @@ public class PaymentService {
             );
         }
 
-        if (payment.getEventId() == null ||
-                payment.getRegistrationId() == null) {
+        if (payment.getEventId() == null
+                || payment.getRegistrationId() == null) {
             throw new RuntimeException(
                     "Payment is missing its event or registration reference"
             );
@@ -367,8 +482,8 @@ public class PaymentService {
                 .orElseThrow(() -> new RuntimeException("Event not found"));
 
         // Validate stored payment amount.
-        if (payment.getAmount() == null ||
-                event.getRegistrationFee() == null) {
+        if (payment.getAmount() == null
+                || event.getRegistrationFee() == null) {
             throw new RuntimeException(
                     "Payment amount or event fee is missing"
             );
@@ -379,8 +494,8 @@ public class PaymentService {
                 100L
         );
 
-        if (payment.getAmount() != expectedAmount ||
-                !"INR".equalsIgnoreCase(payment.getCurrency())) {
+        if (payment.getAmount() != expectedAmount
+                || !"INR".equalsIgnoreCase(payment.getCurrency())) {
             throw new RuntimeException(
                     "Stored payment amount does not match the event fee"
             );
@@ -405,8 +520,8 @@ public class PaymentService {
 
         int totalTeamSize = memberIds.size() + 1;
 
-        if (totalTeamSize < event.getMinTeamSize() ||
-                totalTeamSize > event.getMaxTeamSize()) {
+        if (totalTeamSize < event.getMinTeamSize()
+                || totalTeamSize > event.getMaxTeamSize()) {
             throw new RuntimeException(
                     "Team size is no longer valid for this event"
             );
@@ -507,7 +622,6 @@ public class PaymentService {
     // ==========================================
     // 4. ADMIN: REJECT MANUAL UPI PAYMENT
     // ==========================================
-
     @Transactional
     public Registration rejectManualPayment(UUID paymentId) {
 
@@ -550,7 +664,6 @@ public class PaymentService {
     // ==========================================
     // 7. CHECK MEMBER ELIGIBILITY
     // ==========================================
-
     private void validateMemberEligibility(
             UUID eventId,
             UUID leaderId,
@@ -574,15 +687,15 @@ public class PaymentService {
         Set<UUID> registeredUserIds = new HashSet<>();
 
         // Confirmed teams.
-        List<Team> existingTeams =
-                teamRepository.findAllByEventId(eventId);
+        List<Team> existingTeams
+                = teamRepository.findAllByEventId(eventId);
 
         for (Team existingTeam : existingTeams) {
 
             registeredUserIds.add(existingTeam.getLeaderId());
 
-            List<TeamMember> existingMembers =
-                    teamMemberRepository.findAllByTeamId(
+            List<TeamMember> existingMembers
+                    = teamMemberRepository.findAllByTeamId(
                             existingTeam.getTeamId()
                     );
 
@@ -592,16 +705,16 @@ public class PaymentService {
         }
 
         // Other pending manual-payment submissions.
-        List<Payment> pendingPayments =
-                paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
+        List<Payment> pendingPayments
+                = paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
                         eventId,
                         "UNVERIFIED"
                 );
 
         for (Payment pendingPayment : pendingPayments) {
 
-            if (excludedPaymentId != null &&
-                    excludedPaymentId.equals(pendingPayment.getPaymentId())) {
+            if (excludedPaymentId != null
+                    && excludedPaymentId.equals(pendingPayment.getPaymentId())) {
                 continue;
             }
 
@@ -642,7 +755,6 @@ public class PaymentService {
     // ==========================================
     // 8. GENERATE INDIVIDUAL TICKET
     // ==========================================
-
     private Ticket createTicket(TeamMember teamMember) {
 
         Ticket ticket = new Ticket();
@@ -656,7 +768,6 @@ public class PaymentService {
     // ==========================================
     // 9. SEND HALL TICKET EMAILS AFTER COMMIT
     // ==========================================
-
     private void scheduleRegistrationEmails(
             List<RegistrationEmail> recipients,
             Event event,
@@ -672,40 +783,40 @@ public class PaymentService {
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
 
-                    @Override
-                    public void afterCommit() {
+            @Override
+            public void afterCommit() {
 
-                        for (RegistrationEmail recipient : recipients) {
+                for (RegistrationEmail recipient : recipients) {
 
-                            try {
+                    try {
 
-                                byte[] pdfBytes =
-                                        hallTicketService.generateHallTicket(
-                                                recipient.ticketCode()
-                                        );
-
-                                emailService.sendRegistrationConfirmationWithAttachment(
-                                        recipient.name(),
-                                        recipient.email(),
-                                        event.getEventName(),
-                                        event.getEventDate().toString(),
-                                        teamName,
-                                        recipient.ticketCode(),
-                                        pdfBytes
+                        byte[] pdfBytes
+                                = hallTicketService.generateHallTicket(
+                                        recipient.ticketCode()
                                 );
 
-                            } catch (Exception exception) {
+                        emailService.sendRegistrationConfirmationWithAttachment(
+                                recipient.name(),
+                                recipient.email(),
+                                event.getEventName(),
+                                event.getEventDate().toString(),
+                                teamName,
+                                recipient.ticketCode(),
+                                pdfBytes
+                        );
 
-                                LOGGER.log(
-                                        Level.SEVERE,
-                                        "Failed to generate/send hall ticket to "
-                                                + recipient.email(),
-                                        exception
-                                );
-                            }
-                        }
+                    } catch (Exception exception) {
+
+                        LOGGER.log(
+                                Level.SEVERE,
+                                "Failed to generate/send hall ticket to "
+                                + recipient.email(),
+                                exception
+                        );
                     }
                 }
+            }
+        }
         );
     }
 
@@ -713,6 +824,6 @@ public class PaymentService {
             String name,
             String email,
             String ticketCode
-    ) {}
+            ) {}
 
 }
