@@ -77,7 +77,7 @@ export default function EventCard({ event, onViewDetails, onRegister, isPast = f
             {!isPast && (
               <button onClick={handleRegister} disabled={!registrationOpen} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400">
                 <Ticket size={15} />
-                {registrationOpen ? "Register" : "Closed"}
+                {registrationOpen ? "Register" : event.registrationStatus === "UPCOMING" ? "Coming Soon" : "Registration Closed"}
               </button>
             )}
           </div>
@@ -154,7 +154,7 @@ export default function EventCard({ event, onViewDetails, onRegister, isPast = f
                 {!isPast && (
                   <button onClick={handleRegister} disabled={!registrationOpen} className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400">
                     <Ticket size={17} />
-                    {registrationOpen ? "Register Now" : "Registration Closed"}
+                    {registrationOpen ? "Register Now" : event.registrationStatus === "UPCOMING" ? "Registration Opens Soon" : "Registration Closed"}
                   </button>
                 )}
               </div>
