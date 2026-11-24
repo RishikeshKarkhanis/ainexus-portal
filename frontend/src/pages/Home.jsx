@@ -117,6 +117,33 @@ const activities = [
 
 const lifeAtNexusEvents = [
   {
+    id: "game-on-create-compete-conquer-2026",
+    eventName: "Game On: Create, Compete, Conquer 2026",
+    description: "An exciting gaming tournament for students to showcase their skills and compete against each other.",
+    images: [
+      {
+        src: "/events/game-on-create-compete-conquer-2026/1.png",
+        alt: "Participants at the gaming tournament",
+      },
+      {
+        src: "/events/game-on-create-compete-conquer-2026/2.png",
+        alt: "Students playing the games",
+      },
+      {
+        src: "/events/game-on-create-compete-conquer-2026/3.png",
+        alt: "Event participants posing for a group photo",
+      },
+      {
+        src: "/events/game-on-create-compete-conquer-2026/4.png",
+        alt: "Students celebrating their victories",
+      },
+      {
+        src: "/events/game-on-create-compete-conquer-2026/5.png",
+        alt: "Participants enjoying the gaming tournament",
+      },
+    ],
+  },
+  {
     id: "portfolio-sprint-2026",
     eventName: "Portfolio Sprint 2026",
     description: "A collaborative event to build and showcase student portfolios.",
@@ -190,33 +217,6 @@ const lifeAtNexusEvents = [
       {
         src: "/events/code-and-compass-2024/4.jpeg",
         alt: "Students competing in the coding competition",
-      },
-    ],
-  },
-  {
-    id: "game-on-create-compete-conquer-2026",
-    eventName: "Game On: Create, Compete, Conquer 2026",
-    description: "An exciting gaming tournament for students to showcase their skills and compete against each other.",
-    images: [
-      {
-        src: "/events/game-on-create-compete-conquer-2026/1.png",
-        alt: "Participants at the gaming tournament",
-      },
-      {
-        src: "/events/game-on-create-compete-conquer-2026/2.png",
-        alt: "Students playing the games",
-      },
-      {
-        src: "/events/game-on-create-compete-conquer-2026/3.png",
-        alt: "Event participants posing for a group photo",
-      },
-      {
-        src: "/events/game-on-create-compete-conquer-2026/4.png",
-        alt: "Students celebrating their victories",
-      },
-      {
-        src: "/events/game-on-create-compete-conquer-2026/5.png",
-        alt: "Participants enjoying the gaming tournament",
       },
     ],
   },
