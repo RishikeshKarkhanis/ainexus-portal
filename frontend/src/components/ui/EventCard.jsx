@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarDays, ArrowUpRight, Ticket, X, Building2, IndianRupee, Users, Clock } from "lucide-react";
+import { CalendarDays, ArrowUpRight, Ticket, X, Building2, IndianRupee, Users } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -23,7 +23,20 @@ export default function EventCard({ event, onViewDetails, onRegister, isPast = f
       })
     : "Date to be announced";
 
-  const registrationOpen = event.registrationStatus === "OPEN";
+  // Normalize registration status
+  const registrationStatus = String(event.registrationStatus ?? "")
+    .trim()
+    .toUpperCase();
+
+  const registrationOpen = registrationStatus === "OPEN";
+  const registrationUpcoming = registrationStatus === "UPCOMING";
+
+  // Registration labels
+  const cardButtonText = registrationOpen ? "Register" : registrationUpcoming ? "Coming Soon" : "Registration Closed";
+
+  const modalButtonText = registrationOpen ? "Register Now" : registrationUpcoming ? "Registration Opens Soon" : "Registration Closed";
+
+  const registrationInfoText = isPast ? "Event Completed" : registrationOpen ? "Open" : registrationUpcoming ? "Coming Soon" : "Closed";
 
   useEffect(() => {
     if (!showDetails) return;
@@ -77,7 +90,7 @@ export default function EventCard({ event, onViewDetails, onRegister, isPast = f
             {!isPast && (
               <button onClick={handleRegister} disabled={!registrationOpen} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400">
                 <Ticket size={15} />
-                {registrationOpen ? "Register" : event.registrationStatus === "UPCOMING" ? "Coming Soon" : "Registration Closed"}
+                {cardButtonText}
               </button>
             )}
           </div>
@@ -140,7 +153,7 @@ export default function EventCard({ event, onViewDetails, onRegister, isPast = f
                   <Users className="shrink-0 text-indigo-400" size={20} />
                   <div>
                     <p className="text-xs text-gray-500">Registration</p>
-                    <p className={`text-sm font-medium ${registrationOpen && !isPast ? "text-green-400" : "text-gray-400"}`}>{isPast ? "Event Completed" : registrationOpen ? "Open" : "Closed"}</p>
+                    <p className={`text-sm font-medium ${registrationOpen && !isPast ? "text-green-400" : registrationUpcoming && !isPast ? "text-blue-400" : "text-gray-400"}`}>{registrationInfoText}</p>
                   </div>
                 </div>
               </div>
@@ -154,7 +167,7 @@ export default function EventCard({ event, onViewDetails, onRegister, isPast = f
                 {!isPast && (
                   <button onClick={handleRegister} disabled={!registrationOpen} className="flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-gray-400">
                     <Ticket size={17} />
-                    {registrationOpen ? "Register Now" : event.registrationStatus === "UPCOMING" ? "Registration Opens Soon" : "Registration Closed"}
+                    {modalButtonText}
                   </button>
                 )}
               </div>
