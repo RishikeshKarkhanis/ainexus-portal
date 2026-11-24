@@ -193,6 +193,33 @@ const lifeAtNexusEvents = [
       },
     ],
   },
+  {
+    id: "game-on-create-compete-conquer-2026",
+    eventName: "Game On: Create, Compete, Conquer 2026",
+    description: "An exciting gaming tournament for students to showcase their skills and compete against each other.",
+    images: [
+      {
+        src: "/events/game-on-create-compete-conquer-2026/1.png",
+        alt: "Participants at the gaming tournament",
+      },
+      {
+        src: "/events/game-on-create-compete-conquer-2026/2.png",
+        alt: "Students playing the games",
+      },
+      {
+        src: "/events/game-on-create-compete-conquer-2026/3.png",
+        alt: "Event participants posing for a group photo",
+      },
+      {
+        src: "/events/game-on-create-compete-conquer-2026/4.png",
+        alt: "Students celebrating their victories",
+      },
+      {
+        src: "/events/game-on-create-compete-conquer-2026/5.png",
+        alt: "Participants enjoying the gaming tournament",
+      },
+    ],
+  },
 ];
 
 const galleryImages = ["index/logo.jpeg", "index/acropolis.jpeg", "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=900", "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=900"];
