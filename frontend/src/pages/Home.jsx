@@ -41,7 +41,7 @@ const studentTeam = [
   },
 
   {
-    name: "Rishikesh Karkhanis",
+    name: "Hrishikesh Karkhanis",
     role: "Technical Head",
     image: "/team/hrishikesh.jpeg",
   },
