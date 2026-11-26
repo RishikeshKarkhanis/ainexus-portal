@@ -1,3 +1,4 @@
+
 package com.ainexus.backend.dto.response;
 
 import java.time.LocalDateTime;
@@ -7,29 +8,19 @@ import java.util.UUID;
 public record PaymentVerificationResponse(
 
         UUID paymentId,
-
         UUID registrationId,
-
         UUID eventId,
-
         String eventName,
-
         String teamName,
-
         String leaderName,
-
         String leaderEmail,
+        String leaderPhoneNumber,
 
         List<MemberInfo> members,
-
         String transactionId,
-
         Long amount,
-
         String currency,
-
         LocalDateTime submittedAt,
-
         String paymentStatus
 
 ) {

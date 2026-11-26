@@ -16,6 +16,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.ainexus.backend.dto.request.SubmitManualPaymentRequest;
+import com.ainexus.backend.dto.request.AdminManualRegistrationRequest;
 import com.ainexus.backend.dto.response.PaymentVerificationResponse;
 import com.ainexus.backend.entity.Event;
 import com.ainexus.backend.entity.Payment;
@@ -172,6 +173,7 @@ public class PaymentService {
         registration.setEventId(eventId);
         registration.setTeamName(teamName);
         registration.setTransactionId(transactionId);
+        registration.setLeaderPhoneNumber(normalizeIndianPhoneNumber(request.leaderPhoneNumber()));
         registration.setPaymentStatus("UNVERIFIED");
 
         registration = registrationRepository.save(registration);
@@ -198,6 +200,162 @@ public class PaymentService {
 
         paymentMetadataRepository.save(metadata);
 
+        return registration;
+    }
+
+    // ==========================================
+// ADMIN: CREATE MANUAL REGISTRATION
+// ==========================================
+
+    @Transactional
+    public Registration createAdminManualRegistration(
+            AdminManualRegistrationRequest request
+    ) {
+        UUID eventId = request.eventId();
+        UUID leaderId = request.leaderId();
+
+        // 1. Validate event
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Event not found"));
+
+        if (!"OPEN".equalsIgnoreCase(event.getRegistrationStatus())) {
+            throw new RuntimeException("Event registration is closed");
+        }
+
+        if (event.getRegistrationFee() == null
+                || event.getRegistrationFee() <= 0) {
+            throw new RuntimeException(
+                    "Manual paid registration requires a valid event fee"
+            );
+        }
+
+        // 2. Validate team name
+        String teamName = request.teamName().trim();
+
+        if (teamName.length() < 3 || teamName.length() > 120) {
+            throw new RuntimeException(
+                    "Team name must be between 3 and 120 characters"
+            );
+        }
+
+        // 3. Validate transaction ID
+        String transactionId = request.transactionId()
+                .trim()
+                .toUpperCase(java.util.Locale.ROOT);
+
+        if (transactionId.isBlank() || transactionId.length() > 100) {
+            throw new RuntimeException("Invalid UPI transaction ID");
+        }
+
+        if (paymentRepository.existsByTransId(transactionId)) {
+            throw new RuntimeException(
+                    "This transaction ID has already been submitted"
+            );
+        }
+
+        // 4. Validate members
+        List<UUID> memberIds = request.memberIds();
+
+        if (memberIds == null) {
+            throw new RuntimeException("Team members are required");
+        }
+
+        Set<UUID> uniqueMemberIds = new HashSet<>(memberIds);
+
+        if (uniqueMemberIds.size() != memberIds.size()) {
+            throw new RuntimeException("Duplicate members are not allowed");
+        }
+
+        if (uniqueMemberIds.contains(leaderId)) {
+            throw new RuntimeException(
+                    "Team leader cannot be selected again"
+            );
+        }
+
+        int totalTeamSize = memberIds.size() + 1;
+
+        if (totalTeamSize < event.getMinTeamSize()
+                || totalTeamSize > event.getMaxTeamSize()) {
+            throw new RuntimeException(
+                    "Invalid team size for this event"
+            );
+        }
+
+        // 5. Validate selected users
+        User leader = userRepository.findById(leaderId)
+                .orElseThrow(() -> new RuntimeException(
+                        "Selected team leader not found"
+                ));
+
+        List<User> selectedUsers = userRepository.findAllById(memberIds);
+
+        if (selectedUsers.size() != memberIds.size()) {
+            throw new RuntimeException(
+                    "One or more selected team members do not exist"
+            );
+        }
+
+        // 6. Prevent duplicate event registrations
+        validateMemberEligibility(eventId, leaderId, memberIds);
+
+        // 7. Accept only PENDING or VERIFIED
+        String requestedStatus = request.paymentStatus()
+                .trim()
+                .toUpperCase(java.util.Locale.ROOT);
+
+        if (!"PENDING".equals(requestedStatus)
+                && !"VERIFIED".equals(requestedStatus)) {
+            throw new RuntimeException(
+                    "Payment status must be PENDING or VERIFIED"
+            );
+        }
+
+        // 8. Create registration in existing pending state
+        Registration registration = new Registration();
+
+        registration.setEventId(eventId);
+        registration.setTeamName(teamName);
+        registration.setTransactionId(transactionId);
+        registration.setLeaderPhoneNumber(normalizeIndianPhoneNumber(request.leaderPhoneNumber()));
+        registration.setPaymentStatus("UNVERIFIED");
+
+        registration = registrationRepository.save(registration);
+
+        // 9. Create payment
+        Payment payment = new Payment();
+
+        payment.setRegistrationId(registration.getRegistrationId());
+        payment.setEventId(eventId);
+        payment.setPaymentStatus("UNVERIFIED");
+        payment.setTransId(transactionId);
+
+        payment.setAmount(
+                Math.multiplyExact(
+                        event.getRegistrationFee().longValue(),
+                        100L
+                )
+        );
+
+        payment.setCurrency("INR");
+
+        payment = paymentRepository.save(payment);
+
+        // 10. Save team metadata
+        PaymentMetadata metadata = new PaymentMetadata();
+
+        metadata.setPaymentId(payment.getPaymentId());
+        metadata.setLeaderId(leader.getUserId());
+        metadata.setTeamName(teamName);
+        metadata.setMemberIds(memberIds.toArray(new UUID[0]));
+
+        paymentMetadataRepository.save(metadata);
+
+        // 11. If VERIFIED, reuse existing verification workflow
+        if ("VERIFIED".equals(requestedStatus)) {
+            return verifyManualPayment(payment.getPaymentId());
+        }
+
+        // PENDING: wait for admin verification
         return registration;
     }
 
@@ -319,6 +477,7 @@ public class PaymentService {
         registration.setTeamId(team.getTeamId());
         registration.setTeamName(teamName);
         registration.setTransactionId(null);
+        registration.setLeaderPhoneNumber(normalizeIndianPhoneNumber(request.leaderPhoneNumber()));
         registration.setPaymentStatus("VERIFIED");
         registration = registrationRepository.save(registration);
 
@@ -410,6 +569,7 @@ public class PaymentService {
                             metadata.getTeamName(),
                             leader.getName(),
                             leader.getEmail(),
+                            registration.getLeaderPhoneNumber(),
                             members,
                             payment.getTransId(),
                             payment.getAmount(),
@@ -825,5 +985,20 @@ public class PaymentService {
             String email,
             String ticketCode
             ) {}
+
+
+    private String normalizeIndianPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) {
+            throw new RuntimeException("Leader phone number is required");
+        }
+
+        String normalized = phoneNumber.trim().replaceAll("[\\s-]", "");
+
+        if (normalized.startsWith("+91")) {
+            normalized = normalized.substring(3);
+        }
+
+        return normalized;
+    }
 
 }

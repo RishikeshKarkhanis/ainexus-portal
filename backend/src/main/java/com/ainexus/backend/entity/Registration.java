@@ -1,3 +1,4 @@
+
 package com.ainexus.backend.entity;
 
 import jakarta.persistence.*;
@@ -34,6 +35,9 @@ public class Registration {
 
     @Column(name = "transaction_id")
     private String transactionId;
+
+    @Column(name = "leader_phone_number", length = 15)
+    private String leaderPhoneNumber;
 
     @Column(name = "payment_status", nullable = false, length = 20)
     private String paymentStatus;

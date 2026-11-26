@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { IndianRupee, RefreshCw, Search, CheckCircle2, XCircle, Clock, Users, CalendarDays, User, Mail, CreditCard, LoaderCircle, AlertCircle, ShieldCheck, ChevronDown } from "lucide-react";
+import { IndianRupee, RefreshCw, Search, CheckCircle2, XCircle, Clock, Users, CalendarDays, User, Mail, Phone, CreditCard, LoaderCircle, AlertCircle, ShieldCheck, ChevronDown } from "lucide-react";
 
 import { adminApiRequest } from "../../lib/api";
 
@@ -128,7 +128,7 @@ export default function PaymentVerification() {
 
     if (!query) return true;
 
-    return [payment.teamName, payment.leaderName, payment.leaderEmail, payment.transactionId, ...(payment.members || []).map((member) => member.name)].filter(Boolean).some((value) => value.toLowerCase().includes(query));
+    return [payment.teamName, payment.leaderName, payment.leaderEmail, payment.leaderPhoneNumber, payment.transactionId, ...(payment.members || []).map((member) => member.name)].filter(Boolean).some((value) => value.toLowerCase().includes(query));
   });
 
   const selectedEventDetails = events.find((event) => event.eventId === selectedEvent);
@@ -254,7 +254,7 @@ export default function PaymentVerification() {
       <div className="relative">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
 
-        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by team, leader, email or UTR..." className="w-full rounded-lg border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+        <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by team, leader, email, phone or UTR..." className="w-full rounded-lg border border-gray-200 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
       </div>
 
       {/* Pending payments */}
@@ -323,6 +323,17 @@ export default function PaymentVerification() {
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Mail size={15} className="text-gray-400" />
                           {payment.leaderEmail}
+                        </div>
+
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Phone size={15} className="text-gray-400" />
+                          {payment.leaderPhoneNumber ? (
+                            <a href={`tel:${payment.leaderPhoneNumber}`} className="font-medium text-blue-600 hover:underline">
+                              {payment.leaderPhoneNumber}
+                            </a>
+                          ) : (
+                            <span className="text-gray-400">Not provided</span>
+                          )}
                         </div>
                       </div>
                     </div>

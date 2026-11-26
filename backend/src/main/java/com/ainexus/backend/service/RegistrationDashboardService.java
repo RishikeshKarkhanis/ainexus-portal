@@ -137,6 +137,7 @@ public class RegistrationDashboardService {
             Payment payment = paymentByTeam.get(teamId);
 
             teamRows.add(
+
                     new RegistrationDashboardResponse.TeamRegistrationRow(
                             teamId,
                             registration.getTeamName() != null
@@ -144,6 +145,9 @@ public class RegistrationDashboardService {
                                     : team.getTeamName(),
                             leader != null ? leader.getName() : "Unknown",
                             leader != null ? leader.getEmail() : "",
+                            registration.getLeaderPhoneNumber() != null
+                                    ? registration.getLeaderPhoneNumber()
+                                    : "",
                             members,
                             registration.getRegistrationDate(),
                             payment != null ? payment.getPaymentStatus() : "NOT FOUND",
@@ -151,6 +155,7 @@ public class RegistrationDashboardService {
                                     : registration.getTransactionId(),
                             payment != null ? payment.getAmount() : null
                     )
+
             );
         }
 

@@ -33,6 +33,7 @@ export default function Registration() {
 
   const [step, setStep] = useState("event");
   const [teamName, setTeamName] = useState("");
+  const [leaderPhoneNumber, setLeaderPhoneNumber] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -162,6 +163,7 @@ export default function Registration() {
         eventId,
         teamName: teamName.trim(),
         memberIds: selectedMembers.map((member) => member.userId),
+        leaderPhoneNumber: leaderPhoneNumber.trim(),
       };
 
       if (isFreeEvent) {
@@ -240,8 +242,9 @@ export default function Registration() {
   const teamSizeValid = minSize != null && maxSize != null && currentTeamSize >= minSize && currentTeamSize <= maxSize;
 
   const teamNameValid = teamName.trim().length >= 3 && teamName.trim().length <= 120;
+  const phoneValid = /^(?:\+91[- ]?)?[6-9]\d{9}$/.test(leaderPhoneNumber.trim());
 
-  const canProceedToPayment = registrationOpen && teamSizeValid && teamNameValid;
+  const canProceedToPayment = registrationOpen && teamSizeValid && teamNameValid && phoneValid;
 
   return (
     <main className="registration-editorial starfield min-h-screen bg-[#00001F] px-5 py-8 font-editorial text-[#E8E5DF] sm:px-8 sm:py-12">
@@ -424,6 +427,19 @@ export default function Registration() {
                     <span className="text-[#8B929F]">Minimum 3 characters.</span>
                     <span className="text-[#8B929F]">{teamName.length}/120</span>
                   </div>
+                </div>
+
+                {/* Team Leader Phone Number */}
+                <div>
+                  <label htmlFor="leaderPhoneNumber" className="mb-3 block text-sm font-medium text-[#AEBBD0]">
+                    Team Leader's Phone Number
+                  </label>
+
+                  <input id="leaderPhoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={leaderPhoneNumber} onChange={(e) => setLeaderPhoneNumber(e.target.value.replace(/[^\d+\s-]/g, ""))} maxLength={15} placeholder="Enter your 10-digit mobile number" className="w-full rounded-none border border-[#3B82D6]/20 bg-[#00001F] px-4 py-4 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
+
+                  <p className="mt-2 text-xs text-[#8B929F]">We'll use this number for event-related communication.</p>
+
+                  {leaderPhoneNumber.length > 0 && !phoneValid && <p className="mt-2 text-xs text-red-400">Please enter a valid Indian mobile number.</p>}
                 </div>
 
                 {/* Team Size */}

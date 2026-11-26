@@ -1,15 +1,5 @@
-
 import { useEffect, useMemo, useState } from "react";
-import {
-  Users,
-  UserRound,
-  IndianRupee,
-  Search,
-  LoaderCircle,
-  AlertCircle,
-  RefreshCw,
-  ClipboardList,
-} from "lucide-react";
+import { Users, UserRound, IndianRupee, Search, LoaderCircle, AlertCircle, RefreshCw, ClipboardList } from "lucide-react";
 
 import { adminApiRequest } from "../../lib/api";
 
@@ -32,17 +22,7 @@ const formatDate = (date) => {
 const StatusBadge = ({ status }) => {
   const verified = status?.toUpperCase() === "VERIFIED";
 
-  return (
-    <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
-        verified
-          ? "bg-green-50 text-green-700"
-          : "bg-yellow-50 text-yellow-700"
-      }`}
-    >
-      {status || "UNKNOWN"}
-    </span>
-  );
+  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${verified ? "bg-green-50 text-green-700" : "bg-yellow-50 text-yellow-700"}`}>{status || "UNKNOWN"}</span>;
 };
 
 function RegistrationsManager() {
@@ -66,9 +46,7 @@ function RegistrationsManager() {
       setError("");
 
       try {
-        const data = await adminApiRequest(
-          "/api/admin/registrations/events"
-        );
+        const data = await adminApiRequest("/api/admin/registrations/events");
 
         if (cancelled) return;
 
@@ -109,9 +87,7 @@ function RegistrationsManager() {
       setRegistrations(null);
 
       try {
-        const data = await adminApiRequest(
-          `/api/admin/registrations/${selectedEventId}`
-        );
+        const data = await adminApiRequest(`/api/admin/registrations/${selectedEventId}`);
 
         if (!cancelled) {
           setRegistrations(data);
@@ -135,38 +111,19 @@ function RegistrationsManager() {
   const rows = useMemo(() => {
     if (!registrations) return [];
 
-    const source =
-      viewMode === "TEAM"
-        ? registrations.teamRegistrations
-        : registrations.individualRegistrations;
+    const source = viewMode === "TEAM" ? registrations.teamRegistrations : registrations.individualRegistrations;
 
     const query = search.trim().toLowerCase();
 
     if (!query) return source ?? [];
 
     return (source ?? []).filter((item) => {
-      const searchableValues =
-        viewMode === "TEAM"
-          ? [
-              item.teamName,
-              item.leaderName,
-              item.leaderEmail,
-              item.transactionId,
-              ...(item.members ?? []).flatMap((member) => [
-                member.name,
-                member.email,
-              ]),
-            ]
-          : [
-              item.name,
-              item.email,
-              item.teamName,
-              item.transactionId,
-              item.teamLeader ? "leader" : "member",
-            ];
+      const searchableValues = viewMode === "TEAM" ? [item.teamName, item.leaderName, item.leaderEmail, item.leaderPhoneNumber, item.transactionId, ...(item.members ?? []).flatMap((member) => [member.name, member.email])] : [item.name, item.email, item.teamName, item.transactionId, item.teamLeader ? "leader" : "member"];
 
       return searchableValues.some((value) =>
-        String(value ?? "").toLowerCase().includes(query)
+        String(value ?? "")
+          .toLowerCase()
+          .includes(query),
       );
     });
   }, [registrations, viewMode, search]);
@@ -174,9 +131,7 @@ function RegistrationsManager() {
   const handleRefresh = () => {
     if (selectedEventId) {
       setSelectedEventId("");
-      setTimeout(() => setSelectedEventId(events.find(
-        (event) => event.eventId === selectedEventId
-      )?.eventId ?? ""), 0);
+      setTimeout(() => setSelectedEventId(events.find((event) => event.eventId === selectedEventId)?.eventId ?? ""), 0);
     }
   };
 
@@ -186,28 +141,17 @@ function RegistrationsManager() {
       <div>
         <div className="flex items-center gap-2">
           <ClipboardList className="text-gray-700" size={23} />
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Registrations
-          </h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Registrations</h2>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
-          Monitor event registrations and payment collections.
-        </p>
+        <p className="mt-1 text-sm text-gray-500">Monitor event registrations and payment collections.</p>
       </div>
 
       {/* Event selector and view toggle */}
       <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full sm:max-w-xs">
-          <label className="mb-1.5 block text-xs font-medium text-gray-500">
-            SELECT EVENT
-          </label>
+          <label className="mb-1.5 block text-xs font-medium text-gray-500">SELECT EVENT</label>
 
-          <select
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            disabled={loadingEvents || events.length === 0}
-            className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400"
-          >
+          <select value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)} disabled={loadingEvents || events.length === 0} className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400">
             {loadingEvents ? (
               <option value="">Loading events...</option>
             ) : events.length === 0 ? (
@@ -224,39 +168,17 @@ function RegistrationsManager() {
 
         <div className="flex items-center gap-2">
           <div className="flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-            <button
-              onClick={() => setViewMode("TEAM")}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-                viewMode === "TEAM"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
+            <button onClick={() => setViewMode("TEAM")} className={`rounded-md px-4 py-2 text-sm font-medium transition ${viewMode === "TEAM" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               Team-wise
             </button>
 
-            <button
-              onClick={() => setViewMode("INDIVIDUAL")}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
-                viewMode === "INDIVIDUAL"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
+            <button onClick={() => setViewMode("INDIVIDUAL")} className={`rounded-md px-4 py-2 text-sm font-medium transition ${viewMode === "INDIVIDUAL" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               Individual
             </button>
           </div>
 
-          <button
-            onClick={handleRefresh}
-            disabled={loadingRegistrations || !selectedEventId}
-            title="Refresh registrations"
-            className="rounded-lg border border-gray-200 p-2.5 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
-          >
-            <RefreshCw
-              size={17}
-              className={loadingRegistrations ? "animate-spin" : ""}
-            />
+          <button onClick={handleRefresh} disabled={loadingRegistrations || !selectedEventId} title="Refresh registrations" className="rounded-lg border border-gray-200 p-2.5 text-gray-600 transition hover:bg-gray-50 disabled:opacity-50">
+            <RefreshCw size={17} className={loadingRegistrations ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
@@ -272,24 +194,11 @@ function RegistrationsManager() {
       {/* Summary cards */}
       {registrations && !loadingRegistrations && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SummaryCard
-            icon={Users}
-            label="Total Teams"
-            value={registrations.totalTeams ?? 0}
-          />
+          <SummaryCard icon={Users} label="Total Teams" value={registrations.totalTeams ?? 0} />
 
-          <SummaryCard
-            icon={UserRound}
-            label="Total Participants"
-            value={registrations.totalParticipants ?? 0}
-          />
+          <SummaryCard icon={UserRound} label="Total Participants" value={registrations.totalParticipants ?? 0} />
 
-          <SummaryCard
-            icon={IndianRupee}
-            label="Total Collection"
-            value={formatINR(registrations.totalCollectionInPaise)}
-            highlight
-          />
+          <SummaryCard icon={IndianRupee} label="Total Collection" value={formatINR(registrations.totalCollectionInPaise)} highlight />
         </div>
       )}
 
@@ -297,32 +206,15 @@ function RegistrationsManager() {
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="flex flex-col gap-3 border-b border-gray-100 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="font-semibold text-gray-900">
-              {viewMode === "TEAM"
-                ? "Team Registrations"
-                : "Individual Registrations"}
-            </h3>
+            <h3 className="font-semibold text-gray-900">{viewMode === "TEAM" ? "Team Registrations" : "Individual Registrations"}</h3>
             <p className="mt-0.5 text-xs text-gray-500">
               {rows.length} {viewMode === "TEAM" ? "teams" : "participants"} found
             </p>
           </div>
 
           <div className="relative w-full sm:max-w-xs">
-            <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={
-                viewMode === "TEAM"
-                  ? "Search team, leader, member..."
-                  : "Search participant, email, team..."
-              }
-              className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-gray-400"
-            />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={viewMode === "TEAM" ? "Search team, leader, phone, member..." : "Search participant, email, team..."} className="w-full rounded-lg border border-gray-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-gray-400" />
           </div>
         </div>
 
@@ -334,38 +226,20 @@ function RegistrationsManager() {
         ) : !registrations ? (
           <div className="flex min-h-64 flex-col items-center justify-center text-center">
             <ClipboardList size={32} className="text-gray-300" />
-            <p className="mt-3 text-sm text-gray-500">
-              {events.length === 0
-                ? "No events available."
-                : "Select an event to view registrations."}
-            </p>
+            <p className="mt-3 text-sm text-gray-500">{events.length === 0 ? "No events available." : "Select an event to view registrations."}</p>
           </div>
         ) : rows.length === 0 ? (
           <div className="flex min-h-64 flex-col items-center justify-center text-center">
             <Users size={32} className="text-gray-300" />
-            <p className="mt-3 text-sm font-medium text-gray-700">
-              No registrations found
-            </p>
-            <p className="mt-1 text-xs text-gray-500">
-              Try changing your search or selecting another event.
-            </p>
+            <p className="mt-3 text-sm font-medium text-gray-700">No registrations found</p>
+            <p className="mt-1 text-xs text-gray-500">Try changing your search or selecting another event.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            {viewMode === "TEAM" ? (
-              <TeamTable rows={rows} />
-            ) : (
-              <IndividualTable rows={rows} />
-            )}
-          </div>
+          <div className="overflow-x-auto">{viewMode === "TEAM" ? <TeamTable rows={rows} /> : <IndividualTable rows={rows} />}</div>
         )}
       </div>
 
-      {registrations && (
-        <p className="text-xs text-gray-400">
-          Collection includes verified payments only.
-        </p>
-      )}
+      {registrations && <p className="text-xs text-gray-400">Collection includes verified payments only.</p>}
     </div>
   );
 }
@@ -375,10 +249,7 @@ function SummaryCard({ icon: Icon, label, value, highlight = false }) {
     <div className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">{label}</p>
-        <Icon
-          size={19}
-          className={highlight ? "text-green-600" : "text-gray-400"}
-        />
+        <Icon size={19} className={highlight ? "text-green-600" : "text-gray-400"} />
       </div>
       <p className="mt-3 text-2xl font-semibold text-gray-900">{value}</p>
     </div>
@@ -404,10 +275,18 @@ function TeamTable({ rows }) {
           <tr key={team.teamId} className="hover:bg-gray-50/70">
             <td className="px-5 py-4 align-top">
               <p className="font-medium text-gray-900">{team.teamName}</p>
-              <p className="mt-1 text-xs text-gray-500">
-                Leader: {team.leaderName}
-              </p>
+
+              <p className="mt-1 text-xs text-gray-500">Leader: {team.leaderName}</p>
+
               <p className="text-xs text-gray-400">{team.leaderEmail}</p>
+
+              {team.leaderPhoneNumber ? (
+                <a href={`tel:${team.leaderPhoneNumber}`} className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline">
+                  {team.leaderPhoneNumber}
+                </a>
+              ) : (
+                <p className="mt-1 text-xs text-gray-400">Phone: Not provided</p>
+              )}
             </td>
 
             <td className="px-5 py-4 align-top">
@@ -421,21 +300,15 @@ function TeamTable({ rows }) {
               </div>
             </td>
 
-            <td className="whitespace-nowrap px-5 py-4 text-gray-600">
-              {formatDate(team.registrationDate)}
-            </td>
+            <td className="whitespace-nowrap px-5 py-4 text-gray-600">{formatDate(team.registrationDate)}</td>
 
             <td className="px-5 py-4">
               <StatusBadge status={team.paymentStatus} />
             </td>
 
-            <td className="px-5 py-4 text-xs text-gray-500">
-              {team.transactionId || "—"}
-            </td>
+            <td className="px-5 py-4 text-xs text-gray-500">{team.transactionId || "—"}</td>
 
-            <td className="whitespace-nowrap px-5 py-4 text-right font-medium text-gray-900">
-              {formatINR(team.amountInPaise)}
-            </td>
+            <td className="whitespace-nowrap px-5 py-4 text-right font-medium text-gray-900">{formatINR(team.amountInPaise)}</td>
           </tr>
         ))}
       </tbody>
@@ -462,39 +335,25 @@ function IndividualTable({ rows }) {
         {rows.map((participant) => (
           <tr key={`${participant.userId}-${participant.teamId}`} className="hover:bg-gray-50/70">
             <td className="px-5 py-4">
-              <p className="font-medium text-gray-900">
-                {participant.name}
-              </p>
-              <p className="text-xs text-gray-400">
-                {participant.email}
-              </p>
+              <p className="font-medium text-gray-900">{participant.name}</p>
+              <p className="text-xs text-gray-400">{participant.email}</p>
             </td>
 
-            <td className="px-5 py-4 text-gray-700">
-              {participant.teamName}
-            </td>
+            <td className="px-5 py-4 text-gray-700">{participant.teamName}</td>
 
             <td className="px-5 py-4">
-              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-600">
-                {participant.teamLeader ? "Leader" : "Member"}
-              </span>
+              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-600">{participant.teamLeader ? "Leader" : "Member"}</span>
             </td>
 
-            <td className="whitespace-nowrap px-5 py-4 text-gray-600">
-              {formatDate(participant.registrationDate)}
-            </td>
+            <td className="whitespace-nowrap px-5 py-4 text-gray-600">{formatDate(participant.registrationDate)}</td>
 
             <td className="px-5 py-4">
               <StatusBadge status={participant.paymentStatus} />
             </td>
 
-            <td className="px-5 py-4 text-xs text-gray-500">
-              {participant.transactionId || "—"}
-            </td>
+            <td className="px-5 py-4 text-xs text-gray-500">{participant.transactionId || "—"}</td>
 
-            <td className="whitespace-nowrap px-5 py-4 text-right font-medium text-gray-900">
-              {formatINR(participant.teamAmountInPaise)}
-            </td>
+            <td className="whitespace-nowrap px-5 py-4 text-right font-medium text-gray-900">{formatINR(participant.teamAmountInPaise)}</td>
           </tr>
         ))}
       </tbody>

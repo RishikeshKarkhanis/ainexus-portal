@@ -25,6 +25,7 @@ public record RegistrationDashboardResponse(
 
             String leaderName,
             String leaderEmail,
+            String leaderPhoneNumber,
 
             List<MemberSummary> members,
 
