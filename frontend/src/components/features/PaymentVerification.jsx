@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { IndianRupee, RefreshCw, Search, CheckCircle2, XCircle, Clock, Users, CalendarDays, User, Mail, Phone, CreditCard, LoaderCircle, AlertCircle, ShieldCheck, ChevronDown } from "lucide-react";
+import { IndianRupee, RefreshCw, Search, CheckCircle2, XCircle, Clock, CalendarDays, User, Mail, Phone, CreditCard, LoaderCircle, AlertCircle, ShieldCheck, ChevronDown, Image as ImageIcon, X, ExternalLink } from "lucide-react";
 
 import { adminApiRequest } from "../../lib/api";
 
@@ -16,6 +16,10 @@ export default function PaymentVerification() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [screenshotPayment, setScreenshotPayment] = useState(null);
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [loadingScreenshotId, setLoadingScreenshotId] = useState(null);
+  const [screenshotError, setScreenshotError] = useState("");
 
   // Fetch events
   const fetchEvents = useCallback(async () => {
@@ -72,6 +76,36 @@ export default function PaymentVerification() {
       fetchPayments();
     }
   }, [selectedEvent, fetchPayments]);
+
+  // Load a private payment screenshot through an admin-only signed-URL endpoint.
+  const handleViewScreenshot = async (payment) => {
+    try {
+      setLoadingScreenshotId(payment.paymentId);
+      setScreenshotError("");
+      setScreenshotUrl("");
+      setScreenshotPayment(payment);
+
+      const data = await adminApiRequest(`/api/admin/registrations/${payment.registrationId}/payment-proof`);
+
+      const url = typeof data === "string" ? data : data?.signedUrl || data?.url;
+
+      if (!url) {
+        throw new Error("The server did not return a screenshot URL.");
+      }
+
+      setScreenshotUrl(url);
+    } catch (err) {
+      setScreenshotPayment(null);
+      setScreenshotError(err.message || "Unable to load payment screenshot.");
+    } finally {
+      setLoadingScreenshotId(null);
+    }
+  };
+
+  const closeScreenshot = () => {
+    setScreenshotPayment(null);
+    setScreenshotUrl("");
+  };
 
   // Verify payment
   const handleVerify = async (payment) => {
@@ -250,6 +284,13 @@ export default function PaymentVerification() {
         </div>
       )}
 
+      {screenshotError && (
+        <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          {screenshotError}
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -374,6 +415,24 @@ export default function PaymentVerification() {
                     </div>
                   </div>
 
+                  {/* Payment screenshot */}
+                  <div className="mx-5 mb-5 flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                        <ImageIcon size={19} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">Payment screenshot</p>
+                        <p className="mt-1 text-xs text-gray-500">Open the uploaded UPI proof before verifying this transaction.</p>
+                      </div>
+                    </div>
+
+                    <button type="button" onClick={() => handleViewScreenshot(payment)} disabled={loadingScreenshotId === payment.paymentId} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
+                      {loadingScreenshotId === payment.paymentId ? <LoaderCircle size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+                      View Screenshot
+                    </button>
+                  </div>
+
                   {/* Actions */}
                   <div className="flex flex-col-reverse gap-3 border-t border-gray-100 p-5 sm:flex-row sm:justify-end">
                     <button type="button" onClick={() => handleReject(payment)} disabled={!!actionPaymentId} className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-5 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
@@ -402,6 +461,44 @@ export default function PaymentVerification() {
           <p className="mt-1 text-xs leading-5 text-blue-700">Always confirm the transaction ID and payment amount against the official college bank or UPI records before approving. A submitted UTR alone is not proof of payment.</p>
         </div>
       </div>
+
+      {/* Private payment screenshot preview */}
+      {screenshotPayment && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label={`Payment screenshot for ${screenshotPayment.teamName}`} onClick={closeScreenshot}>
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Payment Screenshot</h2>
+                <p className="mt-1 text-xs text-gray-500">
+                  {screenshotPayment.teamName} · UTR: {screenshotPayment.transactionId || "Not available"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {screenshotUrl && (
+                  <a href={screenshotUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    <ExternalLink size={15} />
+                    Open original
+                  </a>
+                )}
+                <button type="button" onClick={closeScreenshot} aria-label="Close screenshot preview" className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-900">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex min-h-64 items-center justify-center overflow-auto bg-gray-950 p-4">
+              {loadingScreenshotId === screenshotPayment.paymentId || !screenshotUrl ? (
+                <div className="flex items-center gap-3 text-sm text-white/80">
+                  <LoaderCircle size={20} className="animate-spin" />
+                  Loading screenshot...
+                </div>
+              ) : (
+                <img src={screenshotUrl} alt={`Payment proof uploaded by ${screenshotPayment.teamName}`} className="max-h-[72vh] max-w-full rounded-lg object-contain" />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

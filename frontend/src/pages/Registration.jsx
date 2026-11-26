@@ -1,17 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router";
-import { ArrowLeft, CalendarDays, IndianRupee, Building2, Users, UserPlus, AlertCircle, LoaderCircle, Search, X, Check, Crown } from "lucide-react";
+import { ArrowLeft, CalendarDays, IndianRupee, Building2, Users, UserPlus, AlertCircle, LoaderCircle, Search, X, Check, Crown, UploadCloud, FileImage } from "lucide-react";
 
 import { apiRequest } from "../lib/api";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-
-function getThumbnailUrl(path) {
-  if (!path) return null;
-  if (path.startsWith("http")) return path;
-
-  return `${SUPABASE_URL}/storage/v1/object/public/ainexus-assets/${path}`;
-}
 
 function formatDate(date) {
   if (!date) return "Date to be announced";
@@ -45,6 +36,49 @@ export default function Registration() {
   const [paymentError, setPaymentError] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [transactionId, setTransactionId] = useState("");
+  const [paymentScreenshot, setPaymentScreenshot] = useState(null);
+  const [screenshotPreview, setScreenshotPreview] = useState("");
+  const [registrationId, setRegistrationId] = useState("");
+  const [screenshotInputKey, setScreenshotInputKey] = useState(0);
+
+  useEffect(() => {
+    if (!paymentScreenshot) {
+      setScreenshotPreview("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(paymentScreenshot);
+    setScreenshotPreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [paymentScreenshot]);
+
+  const handleScreenshotChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+    if (!allowedTypes.includes(file.type)) {
+      setPaymentError("Please upload a JPG, PNG or WEBP image.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setPaymentError("Screenshot must be 5 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
+    setPaymentError("");
+    setPaymentScreenshot(file);
+  };
+
+  const removePaymentScreenshot = () => {
+    setPaymentScreenshot(null);
+    setScreenshotInputKey((key) => key + 1);
+  };
 
   // Fetch event details
   useEffect(() => {
@@ -84,7 +118,7 @@ export default function Registration() {
 
   // Search teammates
   useEffect(() => {
-    if (step !== "team" || searchQuery.trim().length < 2) {
+    if (step !== "members" || searchQuery.trim().length < 2) {
       setSearchResults([]);
       setSearchLoading(false);
       setSearchError("");
@@ -142,16 +176,21 @@ export default function Registration() {
     setSelectedMembers((previous) => previous.filter((member) => member.userId !== userId));
   };
 
-  // Submit either a free registration or a paid manual UPI payment.
+  // Submit the registration first, then upload its payment screenshot.
+  // If the upload fails, retain registrationId so retrying does not create a duplicate.
   const handlePayment = async () => {
     if (!canProceedToPayment || paymentLoading) return;
 
     const isFreeEvent = Number(event?.registrationFee ?? 0) <= 0;
     const utr = transactionId.trim();
 
-    // UTR is required only for paid events.
     if (!isFreeEvent && (utr.length < 3 || utr.length > 100)) {
       setPaymentError("Please enter a valid UPI transaction ID.");
+      return;
+    }
+
+    if (!isFreeEvent && !paymentScreenshot) {
+      setPaymentError("Please upload your payment screenshot.");
       return;
     }
 
@@ -167,25 +206,43 @@ export default function Registration() {
       };
 
       if (isFreeEvent) {
-        // Free registrations are confirmed directly by the backend.
         await apiRequest("/api/payments/free-registration", {
           method: "POST",
           body: JSON.stringify(payload),
         });
       } else {
-        // Paid registrations remain pending until an admin verifies the UTR.
-        await apiRequest("/api/payments/manual", {
+        let activeRegistrationId = registrationId;
+
+        if (!activeRegistrationId) {
+          const registrationResponse = await apiRequest("/api/payments/manual", {
+            method: "POST",
+            body: JSON.stringify({
+              ...payload,
+              transactionId: utr,
+            }),
+          });
+
+          activeRegistrationId = registrationResponse?.registrationId;
+
+          if (!activeRegistrationId) {
+            throw new Error("Registration was submitted, but the server did not return its registration ID. Please contact the AI Nexus Club team before retrying.");
+          }
+
+          setRegistrationId(activeRegistrationId);
+        }
+
+        const formData = new FormData();
+        formData.append("file", paymentScreenshot);
+
+        await apiRequest(`/api/payments/${activeRegistrationId}/screenshot`, {
           method: "POST",
-          body: JSON.stringify({
-            ...payload,
-            transactionId: utr,
-          }),
+          body: formData,
         });
       }
 
       setPaymentSuccess(true);
     } catch (err) {
-      setPaymentError(err.message || (isFreeEvent ? "Unable to complete your registration. Please try again." : "Unable to submit payment details. Please try again."));
+      setPaymentError(err.message || (isFreeEvent ? "Unable to complete your registration. Please try again." : "Unable to submit your payment details and screenshot. Please try again."));
     } finally {
       setPaymentLoading(false);
     }
@@ -229,7 +286,6 @@ export default function Registration() {
     );
   }
 
-  const thumbnail = getThumbnailUrl(event.thumbnailPath);
   const registrationOpen = event.registrationStatus === "OPEN";
 
   const minSize = event.minTeamSize;
@@ -247,7 +303,7 @@ export default function Registration() {
   const canProceedToPayment = registrationOpen && teamSizeValid && teamNameValid && phoneValid;
 
   return (
-    <main className="registration-editorial starfield min-h-screen bg-[#00001F] px-5 py-8 font-editorial text-[#E8E5DF] sm:px-8 sm:py-12">
+    <main className="registration-editorial starfield flex min-h-screen items-center justify-center bg-[#00001F] px-3 py-3 font-editorial text-[#E8E5DF] sm:px-6 sm:py-4">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
         .registration-editorial {
@@ -298,52 +354,44 @@ export default function Registration() {
         }
       `}</style>
 
-      <div className="mx-auto max-w-3xl space-y-8">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-[#AEBBD0] transition hover:text-[#E8E5DF]">
           <ArrowLeft size={17} />
           Back to Home
         </Link>
 
-        <header className="border-b border-[#3B82D6]/20 pb-7">
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3B82D6]">✦ &nbsp; AI NEXUS · ACROPOLIS</p>
-          <h1 className="mt-4 text-4xl font-medium tracking-tight text-[#E8E5DF] sm:text-5xl">
-            Event <span className="text-[#6F91D8]">Registration.</span>
-          </h1>
-          <p className="mt-3 text-sm leading-7 text-[#AEBBD0] sm:text-base">Review the event details and bring your team together.</p>
+        <header className="flex items-center justify-between gap-4 border-b border-[#3B82D6]/20 pb-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#3B82D6]">AI NEXUS CLUB · ACROPOLIS</p>
+          <div>
+            <h1 className="mt-1 text-2xl font-medium tracking-tight text-[#E8E5DF] sm:text-3xl">
+              Event <span className="text-[#6F91D8]">Registration.</span>
+            </h1>
+            <p className="mt-1 text-xs text-[#AEBBD0] sm:text-sm">A quick, guided registration experience.</p>
+          </div>
         </header>
 
         <div className="overflow-hidden border border-[#3B82D6]/20 bg-[#080D24]/80 shadow-[0_24px_80px_rgba(0,0,0,.18)]">
-          {thumbnail && (
-            <div className="aspect-video w-full overflow-hidden bg-[#18213A]">
-              <img src={thumbnail} alt={event.eventName} className="h-full w-full object-cover" />
-            </div>
-          )}
-
-          <div className="registration-panel space-y-7 p-6 sm:p-8">
+          <div className="registration-panel space-y-4 p-4 sm:p-6">
             {/* Three-step progress indicator, matching the admin verification flow */}
             <div className="flex items-center gap-3">
-              {[
-                { id: "event", label: "Event", number: "01" },
-                { id: "team", label: "Team", number: "02" },
-                { id: "payment", label: "Payment", number: "03" },
-              ].map((item, index) => {
-                const steps = ["event", "team", "payment"];
+              {[{ id: "event", label: "Event", number: "01" }, { id: "team", label: "Team", number: "02" }, { id: "members", label: "Members", number: "03" }, { id: "payment", label: "Pay", number: "04" }, ...(Number(event?.registrationFee ?? 0) > 0 ? [{ id: "proof", label: "Proof", number: "05" }] : [])].map((item, index, items) => {
+                const steps = items.map((stepItem) => stepItem.id);
                 const activeIndex = steps.indexOf(step);
                 const completed = index < activeIndex;
                 const active = item.id === step;
 
                 return (
-                  <div key={item.id} className="flex min-w-0 flex-1 items-center gap-2">
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center border text-[10px] font-semibold tracking-wide ${active ? "border-[#3B82D6] bg-[#1E4F9A] text-[#E8E5DF]" : completed ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-300" : "border-[#3B82D6]/25 text-[#8B929F]"}`}>{completed ? <Check size={15} /> : item.number}</div>
-                    <span className={`truncate text-xs uppercase tracking-[0.12em] ${active ? "text-[#E8E5DF]" : completed ? "text-emerald-300" : "text-[#8B929F]"}`}>{item.label}</span>
-                    {index < 2 && <div className={`h-px min-w-3 flex-1 ${completed ? "bg-emerald-400/50" : "bg-[#3B82D6]/20"}`} />}
+                  <div key={item.id} className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center border text-[10px] font-semibold ${active ? "border-[#3B82D6] bg-[#1E4F9A] text-[#E8E5DF]" : completed ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-300" : "border-[#3B82D6]/25 text-[#8B929F]"}`}>{completed ? <Check size={14} /> : item.number}</div>
+                    <span className={`truncate text-[10px] uppercase tracking-[0.08em] sm:text-xs ${active ? "text-[#E8E5DF]" : completed ? "text-emerald-300" : "text-[#8B929F]"}`}>{item.label}</span>
+                    {index < items.length - 1 && <div className={`h-px min-w-2 flex-1 ${completed ? "bg-emerald-400/50" : "bg-[#3B82D6]/20"}`} />}
                   </div>
                 );
               })}
             </div>
 
             {step === "event" && (
-              <section className="space-y-7">
+              <section className="space-y-4">
                 <div>
                   <div className="mb-3">
                     <span className={`rounded-full px-3 py-1 text-xs font-medium ${registrationOpen ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>{registrationOpen ? "Registration Open" : "Registration Closed"}</span>
@@ -408,72 +456,59 @@ export default function Registration() {
             )}
 
             {step === "team" && (
-              <section className="space-y-6">
+              <section className="space-y-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3B82D6]">STEP 02 · TEAM DETAILS</p>
-                  <h2 className="mt-2 text-2xl font-medium text-[#E8E5DF]">Build your team.</h2>
-                  <p className="mt-2 text-sm leading-7 text-[#AEBBD0]">Choose a team name and add existing AI Nexus users.</p>
+                  <h2 className="mt-1 text-2xl font-medium text-[#E8E5DF]">Set up your team.</h2>
+                  <p className="mt-1 text-sm text-[#AEBBD0]">Choose a team name and contact number.</p>
                 </div>
-
-                {/* Team Name */}
                 <div>
-                  <label htmlFor="teamName" className="mb-3 block text-sm font-medium text-[#AEBBD0]">
+                  <label htmlFor="teamName" className="mb-2 block text-sm font-medium text-[#AEBBD0]">
                     Team Name
                   </label>
-
-                  <input id="teamName" type="text" value={teamName} onChange={(e) => setTeamName(e.target.value)} maxLength={120} placeholder="Enter your team name..." className="w-full rounded-none border border-[#3B82D6]/20 bg-[#00001F] px-4 py-4 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
-
-                  <div className="mt-2 flex justify-between text-xs">
+                  <input id="teamName" type="text" value={teamName} onChange={(e) => setTeamName(e.target.value)} maxLength={120} placeholder="Enter your team name..." className="w-full border border-[#3B82D6]/20 bg-[#00001F] px-4 py-3 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
+                  <div className="mt-1 flex justify-between text-xs">
                     <span className="text-[#8B929F]">Minimum 3 characters.</span>
                     <span className="text-[#8B929F]">{teamName.length}/120</span>
                   </div>
                 </div>
-
-                {/* Team Leader Phone Number */}
                 <div>
-                  <label htmlFor="leaderPhoneNumber" className="mb-3 block text-sm font-medium text-[#AEBBD0]">
+                  <label htmlFor="leaderPhoneNumber" className="mb-2 block text-sm font-medium text-[#AEBBD0]">
                     Team Leader's Phone Number
                   </label>
-
-                  <input id="leaderPhoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={leaderPhoneNumber} onChange={(e) => setLeaderPhoneNumber(e.target.value.replace(/[^\d+\s-]/g, ""))} maxLength={15} placeholder="Enter your 10-digit mobile number" className="w-full rounded-none border border-[#3B82D6]/20 bg-[#00001F] px-4 py-4 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
-
-                  <p className="mt-2 text-xs text-[#8B929F]">We'll use this number for event-related communication.</p>
-
-                  {leaderPhoneNumber.length > 0 && !phoneValid && <p className="mt-2 text-xs text-red-400">Please enter a valid Indian mobile number.</p>}
+                  <input id="leaderPhoneNumber" type="tel" inputMode="tel" autoComplete="tel" value={leaderPhoneNumber} onChange={(e) => setLeaderPhoneNumber(e.target.value.replace(/[^\d+\s-]/g, ""))} maxLength={15} placeholder="Enter your 10-digit mobile number" className="w-full border border-[#3B82D6]/20 bg-[#00001F] px-4 py-3 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
+                  <p className="mt-1 text-xs text-[#8B929F]">Used for event-related communication.</p>
+                  {leaderPhoneNumber.length > 0 && !phoneValid && <p className="mt-1 text-xs text-red-400">Please enter a valid Indian mobile number.</p>}
                 </div>
-
-                {/* Team Size */}
-                <div className="flex items-center justify-between rounded-none border border-[#3B82D6]/20 bg-[#3B82D6]/[0.06] p-4">
+                <div className="flex items-center justify-between border border-[#3B82D6]/20 bg-[#3B82D6]/[0.06] p-3">
                   <div>
-                    <p className="text-sm font-medium">Team Members</p>
-                    <p className="mt-1 text-xs text-[#AEBBD0]">
+                    <p className="text-sm font-medium">Team size</p>
+                    <p className="text-xs text-[#AEBBD0]">
                       Minimum {minSize} · Maximum {maxSize}
                     </p>
                   </div>
-
                   <p className="text-xl font-bold text-[#3B82D6]">
                     {currentTeamSize}/{maxSize ?? "—"}
                   </p>
                 </div>
-
-                {/* Team Leader */}
-                <div>
-                  <p className="mb-3 text-sm font-medium text-[#AEBBD0]">Your Team</p>
-
-                  <div className="flex items-center gap-3 rounded-none border border-[#3B82D6]/30 bg-[#3B82D6]/[0.06] p-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3B82D6]/20">
-                      <Crown className="text-[#3B82D6]" size={20} />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">You</p>
-                      <p className="text-xs text-[#3B82D6]">Team Leader</p>
-                    </div>
-
-                    <span className="rounded-full bg-[#3B82D6]/10 px-3 py-1 text-xs text-[#6F91D8]">Leader</span>
-                  </div>
+                <div className="flex flex-col-reverse gap-3 border-t border-[#3B82D6]/20 pt-4 sm:flex-row">
+                  <button type="button" onClick={() => setStep("event")} className="flex-1 border border-[#3B82D6]/30 px-5 py-3 text-sm font-semibold text-[#AEBBD0]">
+                    Back
+                  </button>
+                  <button type="button" onClick={() => setStep("members")} disabled={!teamNameValid || !phoneValid} className="flex-1 bg-[#1E4F9A] px-5 py-3 text-sm font-semibold text-[#E8E5DF] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-[#AEBBD0]">
+                    Continue to Members <ArrowLeft className="ml-2 inline rotate-180" size={16} />
+                  </button>
                 </div>
+              </section>
+            )}
 
+            {step === "members" && (
+              <section className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3B82D6]">STEP 03 · TEAM MEMBERS</p>
+                  <h2 className="mt-1 text-2xl font-medium text-[#E8E5DF]">Bring your team together.</h2>
+                  <p className="mt-1 text-sm text-[#AEBBD0]">Add teammates and meet the team-size requirement.</p>
+                </div>
                 {/* Selected Teammates */}
                 {selectedMembers.length > 0 && (
                   <div className="space-y-3">
@@ -514,7 +549,7 @@ export default function Registration() {
                     {searchQuery.trim().length >= 2 && !searchLoading && !searchError && searchResults.length === 0 && <p className="mt-4 text-center text-sm text-[#8B929F]">No matching users found.</p>}
 
                     {searchResults.length > 0 && (
-                      <div className="mt-3 overflow-hidden rounded-none border border-[#3B82D6]/20">
+                      <div className="mt-3 max-h-48 overflow-y-auto rounded-none border border-[#3B82D6]/20">
                         {searchResults.map((user) => {
                           const alreadyRegistered = user.alreadyRegistered === true;
                           const isAcropolisEmail = user.email?.trim().toLowerCase().endsWith("@acropolis.in");
@@ -551,105 +586,34 @@ export default function Registration() {
 
                 {currentTeamSize >= maxSize && <p className="rounded-none border border-yellow-500/20 bg-yellow-500/[0.05] p-4 text-sm text-yellow-400">Your team has reached the maximum allowed size.</p>}
 
-                {/* Validation */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm">
-                    {teamNameValid ? (
-                      <>
-                        <Check size={17} className="text-green-400" />
-                        <span className="text-green-400">Team name is valid.</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle size={17} className="text-yellow-400" />
-                        <span className="text-yellow-400">Enter a team name of at least 3 characters.</span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 text-sm">
-                    {teamSizeValid ? (
-                      <>
-                        <Check size={17} className="text-green-400" />
-                        <span className="text-green-400">Team size requirement satisfied.</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle size={17} className="text-yellow-400" />
-                        <span className="text-yellow-400">
-                          Add {Math.max(0, minSize - currentTeamSize)} more
-                          {Math.max(0, minSize - currentTeamSize) === 1 ? " member" : " members"} to meet the minimum team size.
-                        </span>
-                      </>
-                    )}
-                  </div>
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className={teamSizeValid ? "text-green-400" : "text-yellow-400"}>{teamSizeValid ? "Team size requirement satisfied." : `Add ${Math.max(0, minSize - currentTeamSize)} more member(s).`}</span>
+                  <span className="text-[#6F91D8]">
+                    {currentTeamSize}/{maxSize} members
+                  </span>
                 </div>
-
-                <div className="flex flex-col-reverse gap-3 border-t border-[#3B82D6]/20 pt-6 sm:flex-row">
-                  <button type="button" onClick={() => setStep("event")} className="flex-1 border border-[#3B82D6]/30 px-6 py-4 text-sm font-semibold text-[#AEBBD0] transition hover:border-[#3B82D6] hover:text-[#E8E5DF]">
-                    Back to Event
+                <div className="flex flex-col-reverse gap-3 border-t border-[#3B82D6]/20 pt-4 sm:flex-row">
+                  <button type="button" onClick={() => setStep("team")} className="flex-1 border border-[#3B82D6]/30 px-5 py-3 text-sm font-semibold text-[#AEBBD0]">
+                    Back to Team
                   </button>
-                  <button type="button" onClick={() => setStep("payment")} disabled={!canProceedToPayment} className="flex-1 bg-[#1E4F9A] px-6 py-4 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-[#AEBBD0]">
-                    Review & Continue
-                    <ArrowLeft className="ml-2 inline rotate-180" size={16} />
+                  <button type="button" onClick={() => setStep("payment")} disabled={!teamSizeValid} className="flex-1 bg-[#1E4F9A] px-5 py-3 text-sm font-semibold text-[#E8E5DF] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-[#AEBBD0]">
+                    Continue <ArrowLeft className="ml-2 inline rotate-180" size={16} />
                   </button>
                 </div>
               </section>
             )}
 
             {step === "payment" && (
-              <section className="space-y-6">
+              <section className="space-y-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3B82D6]">STEP 03 · FINAL REVIEW</p>
-                  <h2 className="mt-2 text-2xl font-medium text-[#E8E5DF]">Review your registration.</h2>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3B82D6]">STEP 04 · PAYMENT</p>
+                  <h2 className="mt-2 text-2xl font-medium text-[#E8E5DF]">Make your payment.</h2>
                   <p className="mt-2 text-sm leading-7 text-[#AEBBD0]">{Number(event.registrationFee ?? 0) > 0 ? "Make sure your event and team details are correct before proceeding to payment." : "Review your event and team details before completing your free registration."}</p>
-                </div>
-
-                <div className="border border-[#3B82D6]/20 bg-[#00001F]/50 p-5">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[#8B929F]">Selected event</p>
-                  <h3 className="mt-2 text-xl text-[#E8E5DF]">{event.eventName}</h3>
-                  <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs text-[#8B929F]">Event date</p>
-                      <p className="mt-1 text-[#E8E5DF]">{formatDate(event.eventDate)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-[#8B929F]">Registration fee</p>
-                      <p className="mt-1 text-[#E8E5DF]">{event.registrationFee > 0 ? `₹${event.registrationFee}` : "Free"}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border border-[#3B82D6]/20 bg-[#00001F]/50 p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.18em] text-[#8B929F]">Team name</p>
-                      <p className="mt-1 text-lg text-[#E8E5DF]">{teamName.trim()}</p>
-                    </div>
-                    <p className="text-sm text-[#6F91D8]">
-                      {currentTeamSize} / {maxSize} members
-                    </p>
-                  </div>
-                  <div className="mt-4 space-y-3 border-t border-[#3B82D6]/15 pt-4">
-                    <div className="flex items-center gap-3 text-sm">
-                      <Crown size={16} className="text-[#6F91D8]" />
-                      <span className="text-[#E8E5DF]">
-                        You <span className="text-[#8B929F]">· Team Leader</span>
-                      </span>
-                    </div>
-                    {selectedMembers.map((member) => (
-                      <div key={member.userId} className="flex items-center gap-3 text-sm">
-                        <Users size={16} className="text-[#6F91D8]" />
-                        <span className="text-[#E8E5DF]">{member.name}</span>
-                        <span className="truncate text-xs text-[#8B929F]">{member.email}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="space-y-5">
                   {/* Amount */}
-                  <div className="flex items-center justify-between border border-[#3B82D6]/25 bg-[#3B82D6]/[0.06] p-5">
+                  <div className="flex items-center justify-between border border-[#3B82D6]/25 bg-[#3B82D6]/[0.06] p-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.18em] text-[#8B929F]">Amount payable</p>
                       <p className="mt-1 text-xs text-[#AEBBD0]">{Number(event.registrationFee ?? 0) > 0 ? "Pay using the official college UPI QR" : "No payment is required for this event."}</p>
@@ -660,13 +624,13 @@ export default function Registration() {
 
                   {/* UPI QR */}
                   {event.registrationFee > 0 && (
-                    <div className="border border-[#3B82D6]/20 bg-[#00001F]/50 p-5 text-center">
+                    <div className="border border-[#3B82D6]/20 bg-[#00001F]/50 p-3 text-center">
                       <p className="text-sm font-semibold text-[#E8E5DF]">Scan & Pay</p>
 
                       <p className="mt-2 text-xs text-[#AEBBD0]">Scan this QR code using any UPI application.</p>
 
-                      <div className="mx-auto mt-5 flex w-fit items-center justify-center bg-white p-3">
-                        <img src="/qr/qr.png" alt="Official College UPI QR Code" className="h-56 w-56 object-contain" />
+                      <div className="mx-auto mt-3 flex w-fit items-center justify-center bg-white p-2">
+                        <img src="/qr/qr.png" alt="Official College UPI QR Code" className="h-40 w-40 object-contain" />
                       </div>
 
                       <p className="mt-4 text-sm font-semibold text-[#E8E5DF]">Pay exactly ₹{event.registrationFee}</p>
@@ -675,52 +639,107 @@ export default function Registration() {
                     </div>
                   )}
 
-                  {/* UTR input */}
                   {event.registrationFee > 0 && (
-                    <div>
-                      <label htmlFor="transactionId" className="mb-3 block text-sm font-medium text-[#AEBBD0]">
-                        UPI Transaction ID / UTR
-                      </label>
-
-                      <input id="transactionId" type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} maxLength={100} placeholder="Enter your UPI transaction ID" autoComplete="off" className="w-full border border-[#3B82D6]/20 bg-[#00001F] px-4 py-4 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
-
-                      <p className="mt-2 text-xs leading-5 text-[#8B929F]">You can find this ID in your UPI app's payment history. Please double-check it before submitting.</p>
+                    <div className="flex flex-col-reverse gap-3 border-t border-[#3B82D6]/20 pt-4 sm:flex-row">
+                      <button type="button" onClick={() => setStep("members")} className="flex-1 border border-[#3B82D6]/30 px-5 py-3 text-sm font-semibold text-[#AEBBD0]">
+                        Back to Members
+                      </button>
+                      <button type="button" onClick={() => setStep("proof")} className="flex-1 bg-[#1E4F9A] px-5 py-3 text-sm font-semibold text-[#E8E5DF]">
+                        Continue to Proof <ArrowLeft className="ml-2 inline rotate-180" size={16} />
+                      </button>
+                    </div>
+                  )}
+                  {Number(event.registrationFee ?? 0) <= 0 && (
+                    <div className="flex flex-col-reverse gap-3 border-t border-[#3B82D6]/20 pt-4 sm:flex-row">
+                      <button type="button" onClick={() => setStep("members")} className="flex-1 border border-[#3B82D6]/30 px-5 py-3 text-sm font-semibold text-[#AEBBD0]">
+                        Back to Members
+                      </button>
+                      <button type="button" onClick={handlePayment} disabled={!canProceedToPayment || paymentLoading} className="flex-1 bg-[#1E4F9A] px-5 py-3 text-sm font-semibold text-[#E8E5DF] disabled:opacity-50">
+                        {paymentLoading ? "Submitting..." : "Complete Free Registration"}
+                      </button>
                     </div>
                   )}
                 </div>
+              </section>
+            )}
 
-                {paymentError && (
-                  <div role="alert" className="border border-red-500/20 bg-red-500/[0.05] p-4 text-sm text-red-300">
-                    {paymentError}
+            {step === "proof" && (
+              <section className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#3B82D6]">STEP 05 · PAYMENT PROOF</p>
+                  <h2 className="mt-1 text-2xl font-medium text-[#E8E5DF]">Confirm your payment.</h2>
+                  <p className="mt-1 text-sm text-[#AEBBD0]">Enter your UTR and upload the payment screenshot.</p>
+                </div>
+                {event.registrationFee > 0 && (
+                  <div>
+                    <label htmlFor="transactionId" className="mb-3 block text-sm font-medium text-[#AEBBD0]">
+                      UPI Transaction ID / UTR
+                    </label>
+
+                    <input id="transactionId" type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} maxLength={100} placeholder="Enter your UPI transaction ID" autoComplete="off" className="w-full border border-[#3B82D6]/20 bg-[#00001F] px-4 py-4 text-sm text-[#E8E5DF] outline-none transition placeholder:text-[#8B929F] focus:border-[#3B82D6]" />
+
+                    <p className="mt-2 text-xs leading-5 text-[#8B929F]">You can find this ID in your UPI app's payment history. Please double-check it before submitting.</p>
+
+                    <div className="mt-5">
+                      <label className="mb-3 block text-sm font-medium text-[#AEBBD0]">
+                        Payment Screenshot <span className="text-red-400">*</span>
+                      </label>
+
+                      <input key={screenshotInputKey} id="paymentScreenshot" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleScreenshotChange} className="sr-only" />
+
+                      {!paymentScreenshot ? (
+                        <label htmlFor="paymentScreenshot" className="flex cursor-pointer flex-col items-center justify-center gap-2 border border-dashed border-[#3B82D6]/40 bg-[#3B82D6]/[0.04] px-5 py-7 text-center transition hover:border-[#3B82D6] hover:bg-[#3B82D6]/[0.08]">
+                          <UploadCloud size={25} className="text-[#6F91D8]" />
+                          <span className="text-sm font-semibold text-[#E8E5DF]">Upload payment screenshot</span>
+                          <span className="text-xs text-[#8B929F]">JPG, PNG or WEBP · Maximum 5 MB</span>
+                        </label>
+                      ) : (
+                        <div className="border border-[#3B82D6]/25 bg-[#00001F]/50 p-4">
+                          <div className="flex items-center gap-3">
+                            <FileImage size={22} className="shrink-0 text-[#6F91D8]" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-[#E8E5DF]">{paymentScreenshot.name}</p>
+                              <p className="mt-1 text-xs text-[#8B929F]">{(paymentScreenshot.size / (1024 * 1024)).toFixed(2)} MB</p>
+                            </div>
+                            <button type="button" onClick={removePaymentScreenshot} disabled={paymentLoading} className="p-2 text-[#8B929F] transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50" aria-label="Remove payment screenshot">
+                              <X size={18} />
+                            </button>
+                          </div>
+
+                          {screenshotPreview && <img src={screenshotPreview} alt="Payment screenshot preview" className="mt-4 max-h-64 w-full border border-[#3B82D6]/15 object-contain" />}
+
+                          <label htmlFor="paymentScreenshot" className="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#6F91D8] hover:text-[#AEBBD0]">
+                            <UploadCloud size={15} />
+                            Replace screenshot
+                          </label>
+                        </div>
+                      )}
+                      <p className="mt-2 text-xs leading-5 text-[#8B929F]">Upload the successful UPI payment confirmation. Your registration stays pending until an admin verifies it.</p>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex flex-col-reverse gap-3 border-t border-[#3B82D6]/20 pt-6 sm:flex-row">
+                {paymentError && (
+                  <div role="alert" className="border border-red-500/20 bg-red-500/[0.05] p-3 text-sm text-red-300">
+                    {paymentError}
+                  </div>
+                )}
+                <div className="flex flex-col-reverse gap-3 border-t border-[#3B82D6]/20 pt-4 sm:flex-row">
                   <button
                     type="button"
                     onClick={() => {
                       setPaymentError("");
-                      setStep("team");
+                      setStep("payment");
                     }}
                     disabled={paymentLoading}
-                    className="flex-1 border border-[#3B82D6]/30 px-6 py-4 text-sm font-semibold text-[#AEBBD0] transition hover:border-[#3B82D6] hover:text-[#E8E5DF] disabled:opacity-50">
-                    Edit Team
+                    className="flex-1 border border-[#3B82D6]/30 px-5 py-3 text-sm font-semibold text-[#AEBBD0]">
+                    Back to Payment
                   </button>
-                  <button type="button" onClick={handlePayment} disabled={!canProceedToPayment || paymentLoading || (event.registrationFee > 0 && !transactionId.trim())} className="flex-1 inline-flex items-center justify-center gap-2 bg-[#1E4F9A] px-6 py-4 text-sm font-semibold text-[#E8E5DF] transition hover:bg-[#3B82D6] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-[#AEBBD0]">
-                    {paymentLoading ? (
-                      <>
-                        <LoaderCircle size={18} className="animate-spin" />
-                        Submitting Details...
-                      </>
-                    ) : (
-                      <>
-                        <Check size={18} />
-                        {Number(event.registrationFee ?? 0) > 0 ? "Submit Payment Details" : "Complete Free Registration"}
-                      </>
-                    )}
+                  <button type="button" onClick={handlePayment} disabled={!canProceedToPayment || paymentLoading || !transactionId.trim() || !paymentScreenshot} className="flex-1 bg-[#1E4F9A] px-5 py-3 text-sm font-semibold text-[#E8E5DF] disabled:cursor-not-allowed disabled:bg-gray-700 disabled:text-[#AEBBD0]">
+                    {paymentLoading ? "Submitting..." : registrationId ? "Retry Screenshot Upload" : "Submit Payment Details"}
                   </button>
                 </div>
-                <p className="text-center text-xs text-[#8B929F]">{Number(event.registrationFee ?? 0) > 0 ? "Your team will be registered after successful payment verification." : "Your team will be registered immediately after you submit these details."}</p>
+                <p className="text-center text-xs text-[#8B929F]">Your registration remains pending until an admin verifies your payment.</p>
               </section>
             )}
           </div>

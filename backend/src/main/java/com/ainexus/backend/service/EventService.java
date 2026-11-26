@@ -233,6 +233,14 @@ public class EventService {
 
         String thumbnailPath = event.getThumbnailPath();
 
+        // Capture private payment-proof paths before deleting registrations.
+        List<String> paymentProofPaths = jdbcTemplate.queryForList("""
+                SELECT payment_screenshot_path
+                FROM registrations
+                WHERE event_id = ?
+                  AND payment_screenshot_path IS NOT NULL
+                  AND TRIM(payment_screenshot_path) <> ''
+                """, String.class, eventId);
 
         // 1. Delete attendance records before deleting tickets
         jdbcTemplate.update("""
@@ -299,20 +307,37 @@ public class EventService {
         // 7. Delete the event
         eventRepository.delete(event);
 
-        // 8. Delete thumbnail only after successful DB commit
-        if (thumbnailPath != null) {
+        // 8. Delete storage objects only after the database transaction commits.
+        if ((thumbnailPath != null && !thumbnailPath.isBlank())
+                || !paymentProofPaths.isEmpty()) {
 
             TransactionSynchronizationManager.registerSynchronization(
                     new TransactionSynchronization() {
 
                         @Override
                         public void afterCommit() {
-                            try {
-                                supabaseStorageService.deleteImage(
-                                        thumbnailPath
-                                );
-                            } catch (Exception exception) {
-                                // Storage cleanup can be retried separately.
+                            // Public event thumbnail
+                            if (thumbnailPath != null && !thumbnailPath.isBlank()) {
+                                try {
+                                    supabaseStorageService.deleteImage(thumbnailPath);
+                                } catch (Exception exception) {
+                                    System.err.println(
+                                            "Failed to delete event thumbnail from Supabase: "
+                                                    + thumbnailPath + " - " + exception.getMessage()
+                                    );
+                                }
+                            }
+
+                            // Private payment screenshots for every registration in this event
+                            for (String proofPath : paymentProofPaths) {
+                                try {
+                                    supabaseStorageService.deletePaymentProof(proofPath);
+                                } catch (Exception exception) {
+                                    System.err.println(
+                                            "Failed to delete payment proof from Supabase: "
+                                                    + proofPath + " - " + exception.getMessage()
+                                    );
+                                }
                             }
                         }
                     }

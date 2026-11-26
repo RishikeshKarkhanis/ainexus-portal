@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Users, UserRound, IndianRupee, Search, LoaderCircle, AlertCircle, RefreshCw, ClipboardList } from "lucide-react";
+import { Users, UserRound, IndianRupee, Search, LoaderCircle, AlertCircle, RefreshCw, ClipboardList, Eye, X } from "lucide-react";
 
 import { adminApiRequest } from "../../lib/api";
 
@@ -36,6 +36,9 @@ function RegistrationsManager() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [loadingRegistrations, setLoadingRegistrations] = useState(false);
   const [error, setError] = useState("");
+  const [proofPreview, setProofPreview] = useState(null);
+  const [loadingProofId, setLoadingProofId] = useState("");
+  const [proofError, setProofError] = useState("");
 
   // Fetch available events
   useEffect(() => {
@@ -127,6 +130,21 @@ function RegistrationsManager() {
       );
     });
   }, [registrations, viewMode, search]);
+
+  const handleViewProof = async (registrationId) => {
+    if (!registrationId) return;
+    setLoadingProofId(registrationId);
+    setProofError("");
+    try {
+      const response = await adminApiRequest(`/api/admin/registrations/${registrationId}/payment-proof`);
+      if (!response?.signedUrl) throw new Error(response?.message || "Unable to retrieve payment proof.");
+      setProofPreview({ url: response.signedUrl });
+    } catch (err) {
+      setProofError(err.message || "Unable to load payment proof.");
+    } finally {
+      setLoadingProofId("");
+    }
+  };
 
   const handleRefresh = () => {
     if (selectedEventId) {
@@ -235,11 +253,30 @@ function RegistrationsManager() {
             <p className="mt-1 text-xs text-gray-500">Try changing your search or selecting another event.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">{viewMode === "TEAM" ? <TeamTable rows={rows} /> : <IndividualTable rows={rows} />}</div>
+          <div className="overflow-x-auto">{viewMode === "TEAM" ? <TeamTable rows={rows} onViewProof={handleViewProof} loadingProofId={loadingProofId} /> : <IndividualTable rows={rows} />}</div>
         )}
       </div>
 
+      {proofError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{proofError}</div>}
       {registrations && <p className="text-xs text-gray-400">Collection includes verified payments only.</p>}
+      {proofPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setProofPreview(null)}>
+          <div className="w-full max-w-3xl overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <div>
+                <h3 className="font-semibold text-gray-900">Payment Screenshot</h3>
+                <p className="mt-0.5 text-xs text-gray-500">Private file · temporary access link</p>
+              </div>
+              <button type="button" onClick={() => setProofPreview(null)} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100" aria-label="Close preview">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex max-h-[75vh] items-center justify-center overflow-auto bg-gray-50 p-4">
+              <img src={proofPreview.url} alt="Payment proof" className="max-h-[68vh] max-w-full rounded-lg object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -256,15 +293,16 @@ function SummaryCard({ icon: Icon, label, value, highlight = false }) {
   );
 }
 
-function TeamTable({ rows }) {
+function TeamTable({ rows, onViewProof, loadingProofId }) {
   return (
-    <table className="w-full min-w-[1050px] text-left text-sm">
+    <table className="w-full min-w-[1180px] text-left text-sm">
       <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
         <tr>
           <th className="px-5 py-3 font-medium">Team</th>
           <th className="px-5 py-3 font-medium">Team Members</th>
           <th className="px-5 py-3 font-medium">Registered On</th>
           <th className="px-5 py-3 font-medium">Payment</th>
+          <th className="px-5 py-3 font-medium">Proof</th>
           <th className="px-5 py-3 font-medium">Transaction ID</th>
           <th className="px-5 py-3 text-right font-medium">Amount Paid</th>
         </tr>
@@ -306,6 +344,15 @@ function TeamTable({ rows }) {
               <StatusBadge status={team.paymentStatus} />
             </td>
 
+            <td className="px-5 py-4">
+              {team.paymentScreenshotUploaded ? (
+                <button type="button" onClick={() => onViewProof(team.registrationId)} disabled={loadingProofId === team.registrationId} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                  {loadingProofId === team.registrationId ? <LoaderCircle size={14} className="animate-spin" /> : <Eye size={14} />} View Screenshot
+                </button>
+              ) : (
+                <span className="text-xs text-gray-400">Not uploaded</span>
+              )}
+            </td>
             <td className="px-5 py-4 text-xs text-gray-500">{team.transactionId || "—"}</td>
 
             <td className="whitespace-nowrap px-5 py-4 text-right font-medium text-gray-900">{formatINR(team.amountInPaise)}</td>

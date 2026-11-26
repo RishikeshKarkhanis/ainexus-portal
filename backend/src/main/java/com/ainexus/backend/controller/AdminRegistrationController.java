@@ -50,6 +50,18 @@ public class AdminRegistrationController {
         return registrationDashboardService.getEventRegistrations(eventId);
     }
 
+    // Private payment proof access; /api/admin/** is protected by ROLE_ADMIN.
+    @GetMapping("/{registrationId}/payment-proof")
+    public ResponseEntity<?> getPaymentProof(@PathVariable UUID registrationId) {
+        try {
+            String signedUrl = registrationDashboardService.getPaymentProofSignedUrl(registrationId);
+            return ResponseEntity.ok(Map.of("success", true, "signedUrl", signedUrl, "expiresInSeconds", 600));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
     // Create manual registration
     @PostMapping("/manual")
     public ResponseEntity<?> createManualRegistration(

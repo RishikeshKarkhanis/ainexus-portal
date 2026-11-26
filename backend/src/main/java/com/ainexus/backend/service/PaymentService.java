@@ -34,6 +34,12 @@ import com.ainexus.backend.repository.TeamMemberRepository;
 import com.ainexus.backend.repository.TeamRepository;
 import com.ainexus.backend.repository.TicketRepository;
 import com.ainexus.backend.repository.UserRepository;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.access.AccessDeniedException;
+import com.ainexus.backend.service.SupabaseStorageService;
+import java.io.IOException;
+import java.text.Normalizer;
+import java.util.Locale;
 
 @Service
 public class PaymentService {
@@ -51,6 +57,7 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final EmailService emailService;
     private final HallTicketService hallTicketService;
+    private final SupabaseStorageService supabaseStorageService;
 
     public PaymentService(
             EventRepository eventRepository,
@@ -62,7 +69,8 @@ public class PaymentService {
             TicketRepository ticketRepository,
             UserRepository userRepository,
             EmailService emailService,
-            HallTicketService hallTicketService
+            HallTicketService hallTicketService,
+            SupabaseStorageService supabaseStorageService
     ) {
         this.eventRepository = eventRepository;
         this.paymentRepository = paymentRepository;
@@ -74,6 +82,7 @@ public class PaymentService {
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.hallTicketService = hallTicketService;
+        this.supabaseStorageService = supabaseStorageService;
     }
 
     // ==========================================
@@ -118,8 +127,8 @@ public class PaymentService {
         String transactionId = request.transactionId() == null
                 ? ""
                 : request.transactionId()
-                        .trim()
-                        .toUpperCase(java.util.Locale.ROOT);
+                .trim()
+                .toUpperCase(java.util.Locale.ROOT);
 
         if (transactionId.isBlank() || transactionId.length() > 100) {
             throw new RuntimeException(
@@ -488,6 +497,120 @@ public class PaymentService {
     }
 
     // ==========================================
+
+    // ==========================================
+    // STUDENT: UPLOAD PAYMENT SCREENSHOT
+    // ==========================================
+    @Transactional
+    public Registration uploadPaymentScreenshot(
+            UUID registrationId,
+            MultipartFile file,
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("Authentication required");
+        }
+
+        if (registrationId == null) {
+            throw new IllegalArgumentException("Registration ID is required");
+        }
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Payment screenshot is required");
+        }
+
+        if (file.getSize() > 5L * 1024L * 1024L) {
+            throw new IllegalArgumentException("Screenshot must be 5 MB or smaller");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !Set.of(
+                "image/jpeg", "image/png", "image/webp"
+        ).contains(contentType.toLowerCase(Locale.ROOT))) {
+            throw new IllegalArgumentException(
+                    "Only JPG, PNG and WEBP screenshots are allowed"
+            );
+        }
+
+        User leader = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new AccessDeniedException("User not found"));
+
+        Registration registration = registrationRepository.findById(registrationId)
+                .orElseThrow(() -> new IllegalArgumentException("Registration not found"));
+
+        Payment payment = paymentRepository.findByRegistrationId(registrationId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No payment record exists for this registration"
+                ));
+
+        PaymentMetadata metadata = paymentMetadataRepository
+                .findByPaymentId(payment.getPaymentId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Payment metadata not found"
+                ));
+
+        if (!leader.getUserId().equals(metadata.getLeaderId())) {
+            throw new AccessDeniedException(
+                    "Only the team leader can upload this payment screenshot"
+            );
+        }
+
+        if (!"UNVERIFIED".equalsIgnoreCase(registration.getPaymentStatus())
+                || !"UNVERIFIED".equalsIgnoreCase(payment.getPaymentStatus())) {
+            throw new IllegalArgumentException(
+                    "Screenshot uploads are only allowed for pending payments"
+            );
+        }
+
+        Event event = eventRepository.findById(registration.getEventId())
+                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        String extension = switch (contentType.toLowerCase(Locale.ROOT)) {
+            case "image/jpeg" -> "jpg";
+            case "image/png" -> "png";
+            case "image/webp" -> "webp";
+            default -> throw new IllegalArgumentException("Unsupported image type");
+        };
+
+        String eventFolder = toSafePathSegment(event.getEventName());
+        String teamFileName = toSafePathSegment(metadata.getTeamName());
+        String registrationSuffix = registration.getRegistrationId()
+                .toString().replace("-", "").substring(0, 8);
+
+        String objectPath = eventFolder + "/"
+                + teamFileName + "-" + registrationSuffix + "." + extension;
+
+        try {
+            supabaseStorageService.uploadPaymentProof(
+                    objectPath,
+                    file.getBytes(),
+                    contentType.toLowerCase(Locale.ROOT)
+            );
+        } catch (IOException exception) {
+            throw new RuntimeException("Unable to read payment screenshot", exception);
+        }
+
+        registration.setPaymentScreenshotPath(objectPath);
+        registration.setPaymentScreenshotUploadedAt(OffsetDateTime.now());
+
+        return registrationRepository.save(registration);
+    }
+
+    private String toSafePathSegment(String value) {
+        String normalized = Normalizer.normalize(
+                value == null ? "" : value,
+                Normalizer.Form.NFD
+        );
+
+        String safe = normalized
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-|-$", "");
+
+        return safe.isBlank() ? "unnamed" : safe;
+    }
+
     // 2. ADMIN: FETCH PENDING MANUAL PAYMENTS
     // ==========================================
     @Transactional(readOnly = true)
@@ -517,9 +640,9 @@ public class PaymentService {
 
         List<Payment> pendingPayments
                 = paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
-                        eventId,
-                        "UNVERIFIED"
-                );
+                eventId,
+                "UNVERIFIED"
+        );
 
         List<PaymentVerificationResponse> responses = new ArrayList<>();
 
@@ -529,7 +652,7 @@ public class PaymentService {
                     .findByPaymentId(payment.getPaymentId())
                     .orElseThrow(() -> new RuntimeException(
                             "Payment metadata not found for payment: "
-                            + payment.getPaymentId()
+                                    + payment.getPaymentId()
                     ));
 
             User leader = userRepository.findById(metadata.getLeaderId())
@@ -545,14 +668,14 @@ public class PaymentService {
 
             List<PaymentVerificationResponse.MemberInfo> members
                     = users.stream()
-                            .map(user
+                    .map(user
                                     -> new PaymentVerificationResponse.MemberInfo(
-                                            user.getUserId(),
-                                            user.getName(),
-                                            user.getEmail()
-                                    )
+                                    user.getUserId(),
+                                    user.getName(),
+                                    user.getEmail()
                             )
-                            .toList();
+                    )
+                    .toList();
 
             Registration registration = registrationRepository
                     .findById(payment.getRegistrationId())
@@ -856,8 +979,8 @@ public class PaymentService {
 
             List<TeamMember> existingMembers
                     = teamMemberRepository.findAllByTeamId(
-                            existingTeam.getTeamId()
-                    );
+                    existingTeam.getTeamId()
+            );
 
             for (TeamMember member : existingMembers) {
                 registeredUserIds.add(member.getUserId());
@@ -867,9 +990,9 @@ public class PaymentService {
         // Other pending manual-payment submissions.
         List<Payment> pendingPayments
                 = paymentRepository.findAllByEventIdAndPaymentStatusIgnoreCase(
-                        eventId,
-                        "UNVERIFIED"
-                );
+                eventId,
+                "UNVERIFIED"
+        );
 
         for (Payment pendingPayment : pendingPayments) {
 
@@ -943,40 +1066,40 @@ public class PaymentService {
         TransactionSynchronizationManager.registerSynchronization(
                 new TransactionSynchronization() {
 
-            @Override
-            public void afterCommit() {
+                    @Override
+                    public void afterCommit() {
 
-                for (RegistrationEmail recipient : recipients) {
+                        for (RegistrationEmail recipient : recipients) {
 
-                    try {
+                            try {
 
-                        byte[] pdfBytes
-                                = hallTicketService.generateHallTicket(
+                                byte[] pdfBytes
+                                        = hallTicketService.generateHallTicket(
                                         recipient.ticketCode()
                                 );
 
-                        emailService.sendRegistrationConfirmationWithAttachment(
-                                recipient.name(),
-                                recipient.email(),
-                                event.getEventName(),
-                                event.getEventDate().toString(),
-                                teamName,
-                                recipient.ticketCode(),
-                                pdfBytes
-                        );
+                                emailService.sendRegistrationConfirmationWithAttachment(
+                                        recipient.name(),
+                                        recipient.email(),
+                                        event.getEventName(),
+                                        event.getEventDate().toString(),
+                                        teamName,
+                                        recipient.ticketCode(),
+                                        pdfBytes
+                                );
 
-                    } catch (Exception exception) {
+                            } catch (Exception exception) {
 
-                        LOGGER.log(
-                                Level.SEVERE,
-                                "Failed to generate/send hall ticket to "
-                                + recipient.email(),
-                                exception
-                        );
+                                LOGGER.log(
+                                        Level.SEVERE,
+                                        "Failed to generate/send hall ticket to "
+                                                + recipient.email(),
+                                        exception
+                                );
+                            }
+                        }
                     }
                 }
-            }
-        }
         );
     }
 
@@ -984,7 +1107,7 @@ public class PaymentService {
             String name,
             String email,
             String ticketCode
-            ) {}
+    ) {}
 
 
     private String normalizeIndianPhoneNumber(String phoneNumber) {

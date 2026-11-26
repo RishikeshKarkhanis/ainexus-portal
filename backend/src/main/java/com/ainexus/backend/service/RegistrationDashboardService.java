@@ -21,6 +21,19 @@ public class RegistrationDashboardService {
     private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final SupabaseStorageService supabaseStorageService;
+
+
+    @Transactional(readOnly = true)
+    public String getPaymentProofSignedUrl(UUID registrationId) {
+        Registration registration = registrationRepository.findById(registrationId)
+                .orElseThrow(() -> new RuntimeException("Registration not found"));
+        String path = registration.getPaymentScreenshotPath();
+        if (path == null || path.isBlank()) {
+            throw new RuntimeException("No payment screenshot has been uploaded");
+        }
+        return supabaseStorageService.createPaymentProofSignedUrl(path, 600);
+    }
 
     @Transactional(readOnly = true)
     public RegistrationDashboardResponse getEventRegistrations(UUID eventId) {
@@ -153,7 +166,10 @@ public class RegistrationDashboardService {
                             payment != null ? payment.getPaymentStatus() : "NOT FOUND",
                             payment != null ? payment.getTransId()
                                     : registration.getTransactionId(),
-                            payment != null ? payment.getAmount() : null
+                            payment != null ? payment.getAmount() : null,
+                            registration.getRegistrationId(),
+                            registration.getPaymentScreenshotPath() != null
+                                    && !registration.getPaymentScreenshotPath().isBlank()
                     )
 
             );
