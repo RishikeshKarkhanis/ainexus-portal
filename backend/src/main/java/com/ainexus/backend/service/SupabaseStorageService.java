@@ -1,20 +1,15 @@
 package com.ainexus.backend.service;
 
-import lombok.RequiredArgsConstructor;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriUtils;
 
-import java.nio.charset.StandardCharsets;
-import org.springframework.web.client.RestClientResponseException;
-
-import java.nio.charset.StandardCharsets;
-import org.springframework.web.util.UriUtils;
-import org.springframework.web.client.RestClientResponseException;
-import org.springframework.http.MediaType;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -29,8 +24,10 @@ public class SupabaseStorageService {
     @Value("${supabase.storage.bucket}")
     private String bucket;
 
-    private final RestClient restClient = RestClient.create();
+    @Value("${supabase.service-role-key}")
+    private String serviceRoleKey;
 
+    private final RestClient restClient = RestClient.create();
 
     public String uploadImage(String filePath, byte[] fileBytes, String contentType) {
 
@@ -51,7 +48,7 @@ public class SupabaseStorageService {
             restClient.post()
                     .uri(uploadUrl)
                     .header("apikey", secretKey)
-                    .header("Authorization", "Bearer " + secretKey)
+                    .header("Authorization", "Bearer " + serviceRoleKey)
                     .header("x-upsert", "true")
                     .contentType(MediaType.parseMediaType(contentType))
                     .body(fileBytes)
